@@ -1,0 +1,1553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- 개발 중 옛 버전 캐시 방지 -->
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>AI Safety Agent Persona Builder</title>
+<!-- Tabler 아이콘 (선택지의 아이콘에 사용) -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.5.0/dist/tabler-icons.min.css">
+
+<style>
+/* =====================================================
+   ◆ 색상 / 폰트 변수
+   여기서 색상을 바꾸면 페이지 전체 색상이 바뀜.
+   ===================================================== */
+:root {
+  --bg-page: #f5f5f4;          /* 페이지 배경 */
+  --bg-card: #ffffff;          /* 카드 배경 */
+  --bg-soft: #f0efe9;          /* 부드러운 회색 (음성 샘플 박스 등) */
+  --bg-info: #e6f1fb;          /* 파란 강조 배경 */
+  --text-primary: #1a1a1a;
+  --text-secondary: #666;
+  --text-tertiary: #999;
+  --text-info: #185fa5;        /* 강조 텍스트 / 버튼 */
+  --text-warm: #854f0b;
+  --border: rgba(0,0,0,0.12);
+  --border-strong: rgba(0,0,0,0.28);
+  --border-active: #185fa5;    /* 선택된 카드 테두리 */
+}
+* { box-sizing: border-box; }
+body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif; background: var(--bg-page); color: var(--text-primary); line-height: 1.6; }
+.container { max-width: 720px; margin: 0 auto; padding: 28px 20px 60px; }
+
+/* =====================================================
+   ◆ 상단 Progress Strip (라이브 프리뷰)
+   ===================================================== */
+.progress-strip { display: flex; align-items: center; gap: 14px; margin-bottom: 28px; padding: 14px 16px; background: var(--bg-soft); border-radius: 12px; }
+.preview-avatar { width: 48px; height: 48px; border-radius: 50%; background: var(--bg-info); color: var(--text-info); display: flex; align-items: center; justify-content: center; flex-shrink: 0; overflow: hidden; }
+.preview-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.preview-info { flex: 1; min-width: 0; }
+.preview-name { font-size: 14px; font-weight: 500; color: var(--text-primary); margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.step-label { font-size: 12px; color: var(--text-secondary); }
+.step-progress { display: flex; gap: 4px; margin-top: 8px; }
+.step-dot { height: 3px; flex: 1; background: var(--border); border-radius: 2px; transition: background 0.2s; }
+.step-dot.active { background: var(--text-info); }
+.step-dot.done { background: var(--text-info); opacity: 0.5; }
+
+/* =====================================================
+   ◆ 질문 / 카드 영역
+   ===================================================== */
+.section-divider { font-size: 11px; color: var(--text-tertiary); margin: 0 0 8px; text-transform: uppercase; letter-spacing: 0.7px; font-weight: 500; }
+.question { font-size: 20px; font-weight: 500; margin: 0 0 6px; }
+.question-sub { font-size: 14px; color: var(--text-secondary); margin: 0 0 20px; }
+.sub-heading { font-size: 17px; font-weight: 600; color: var(--text-primary); margin: 0 0 12px; line-height: 1.4; }
+.card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 24px; }
+@media (max-width: 540px) { .card-grid { grid-template-columns: 1fr; } }
+.opt-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 18px; cursor: pointer; transition: all 0.15s; display: flex; flex-direction: column; }
+.opt-card:hover { border-color: var(--border-strong); }
+.opt-card.selected { border: 2px solid var(--border-active); padding: 17px; }
+.card-image { width: 100%; height: 180px; background: var(--bg-soft); border-radius: 8px; margin-bottom: 12px; display: flex; align-items: center; justify-content: center; color: var(--text-tertiary); font-size: 13px; overflow: hidden; }
+.card-image img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.card-header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.card-icon { font-size: 22px; color: var(--text-secondary); }
+.card-label { font-size: 16px; font-weight: 500; }
+.card-desc { font-size: 13px; color: var(--text-secondary); line-height: 1.5; margin: 0 0 14px; flex: 1; }
+.audio-sample { background: var(--bg-soft); border-radius: 8px; padding: 10px 12px; display: flex; align-items: center; gap: 10px; }
+.play-btn { width: 28px; height: 28px; border-radius: 50%; background: var(--text-info); color: white; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.play-btn:hover { opacity: 0.85; }
+.play-btn:disabled { opacity: 0.5; cursor: default; }
+.sample-text { font-size: 12px; color: var(--text-secondary); font-style: italic; line-height: 1.4; }
+
+/* =====================================================
+   ◆ 하단 버튼
+   ===================================================== */
+.nav-controls { display: flex; justify-content: space-between; gap: 12px; margin-top: 24px; }
+.btn { padding: 12px 24px; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; border: 1px solid var(--border-strong); background: var(--bg-card); color: var(--text-primary); font-family: inherit; }
+.btn:hover { background: var(--bg-soft); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-primary { background: var(--text-info); border-color: var(--text-info); color: white; }
+.btn-primary:hover { background: #144d87; }
+
+/* =====================================================
+   ◆ 시작 화면 / 요약 화면
+   ===================================================== */
+.intro-card { text-align: center; padding: 56px 24px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; }
+.intro-title { font-size: 26px; font-weight: 500; margin: 0 0 12px; }
+.intro-desc { color: var(--text-secondary); margin: 0 0 28px; font-size: 15px; }
+.hidden { display: none; }
+
+/* =====================================================
+   ◆ Persona card — step 7의 이미지 + 자기소개 텍스트 (좌우 배치)
+   ===================================================== */
+.persona-card {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 28px;
+  align-items: stretch;
+}
+@media (max-width: 540px) {
+  .persona-card { grid-template-columns: 1fr; }
+}
+.persona-image {
+  aspect-ratio: 1 / 1;
+  background: var(--bg-soft);
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-tertiary);
+  font-size: 13px;
+  overflow: hidden;
+  align-self: start;
+}
+.persona-image img,
+.persona-image video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.persona-intro {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 18px;
+}
+.intro-audio-bar {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 14px; padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+.intro-audio-label { font-size: 13px; color: var(--text-secondary); }
+#personaIntroText {
+  font-size: 15px; line-height: 1.6;
+  color: var(--text-primary);
+  white-space: pre-wrap;
+}
+#personaIntroText.empty {
+  color: var(--text-tertiary);
+  font-style: italic;
+  text-align: center;
+}
+
+/* =====================================================
+   ◆ Demographics — form inputs / Likert scale
+   ===================================================== */
+.form-group { margin-bottom: 20px; }
+.form-label { display: block; font-size: 14px; font-weight: 500; color: var(--text-primary); margin-bottom: 8px; line-height: 1.4; }
+.text-input, .number-input, .select-input {
+  width: 100%; padding: 10px 12px; font-size: 14px; font-family: inherit;
+  border: 1px solid var(--border); border-radius: 8px;
+  background: var(--bg-card); color: var(--text-primary);
+}
+.text-input:focus, .number-input:focus, .select-input:focus { outline: none; border-color: var(--border-active); }
+.name-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 540px) { .name-row { grid-template-columns: 1fr; } }
+.radio-group {
+  display: grid; grid-template-columns: 1fr 1fr;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.radio-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 14px; font-size: 14px; cursor: pointer;
+  background: var(--bg-card);
+  transition: background 0.15s; user-select: none;
+}
+.radio-item:nth-child(1), .radio-item:nth-child(2) { border-bottom: 1px solid var(--border); }
+.radio-item:nth-child(odd) { border-right: 1px solid var(--border); }
+.radio-item:nth-child(1) { border-top-left-radius: 8px; }
+.radio-item:nth-child(2) { border-top-right-radius: 8px; }
+.radio-item:nth-child(3) { border-bottom-left-radius: 8px; }
+.radio-item:nth-child(4) { border-bottom-right-radius: 8px; }
+.radio-item::before {
+  content: ''; width: 14px; height: 14px;
+  border-radius: 50%;
+  border: 1.5px solid var(--text-secondary);
+  flex-shrink: 0;
+  transition: all 0.15s;
+}
+.radio-item:hover { background: var(--bg-soft); }
+.radio-item.selected { box-shadow: inset 0 0 0 2px var(--border-active); }
+.radio-item.selected::before { background: var(--border-active); border-color: var(--border-active); }
+.likert-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+.likert-option {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  padding: 10px 4px; border: 1px solid var(--border); border-radius: 8px;
+  cursor: pointer; background: var(--bg-card); transition: all 0.15s;
+  user-select: none;
+}
+.likert-option:hover { border-color: var(--border-strong); }
+.likert-option.selected { border: 2px solid var(--border-active); padding: 9px 3px; }
+.likert-circle { width: 16px; height: 16px; border-radius: 50%; border: 1.5px solid var(--text-secondary); flex-shrink: 0; }
+.likert-option.selected .likert-circle { background: var(--border-active); border-color: var(--border-active); }
+/* 각 박스 라벨 — 원 위에 표시. min-height로 줄 수가 달라도 원이 가지런히 정렬됨 */
+.likert-label { font-size: 11px; color: var(--text-secondary); text-align: center; line-height: 1.25;
+  min-height: 28px; display: flex; align-items: center; justify-content: center; }
+.likert-option.selected .likert-label { color: var(--text-info); font-weight: 600; }
+
+/* 짧은 예시 힌트 (Q10/Q12) — 기울임 */
+.form-hint { font-size: 12.5px; color: var(--text-tertiary); font-style: italic; margin: -2px 0 10px; line-height: 1.4; }
+.perspective-group {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 18px 18px 2px;
+  margin-bottom: 18px;
+}
+.perspective-group-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 4px;
+}
+.perspective-group-desc {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.45;
+  margin: 0 0 18px;
+}
+
+/* =====================================================
+   ◆ Scenario phase — 이미지 / 진행 바 / 음성 플레이어 + 자막
+   ===================================================== */
+/* 이미지 — 별도 박스/배경 없이 이미지만 표시 */
+.training-image { width: 100%; border-radius: 12px; overflow: hidden; margin-bottom: 16px; }
+.training-image img { width: 100%; display: block; }
+.training-image span { display: block; padding: 40px; text-align: center; color: var(--text-tertiary); font-size: 13px; background: var(--bg-soft); border-radius: 12px; }
+.situation-label {
+  display: inline-flex;
+  align-items: center;
+  margin: 2px 0 14px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: var(--bg-info);
+  color: var(--text-info);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* 진행 바 — 24단계 중 현재 위치를 직관적으로 표시 */
+.train-progress { width: 100%; height: 8px; background: var(--border); border-radius: 999px; overflow: hidden; margin-bottom: 22px; }
+.train-progress-fill { height: 100%; background: var(--text-info); border-radius: 999px; width: 0; transition: width 0.35s ease; }
+
+.audio-player {
+  display: flex; align-items: center; gap: 14px;
+  background: var(--bg-soft); border-radius: 10px;
+  padding: 14px 16px; margin-top: 14px;
+}
+.play-btn-lg {
+  width: 44px; height: 44px; border-radius: 50%;
+  background: var(--text-info); color: white; border: none;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; font-size: 20px;
+}
+.play-btn-lg:hover { background: #144d87; }
+.subtitle-box {
+  flex: 1; min-height: 44px; display: flex; align-items: center;
+  font-size: 14.5px; line-height: 1.5; color: var(--text-primary);
+}
+.subtitle-box.empty { color: var(--text-tertiary); font-style: italic; }
+
+/* =====================================================
+   ◆ Scenario phase — 시나리오 이미지/텍스트, 메시지 카드
+   ===================================================== */
+.scenario-context {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 16px;
+}
+.scenario-text {
+  font-size: 16px; line-height: 1.7; color: var(--text-primary);
+  white-space: pre-wrap; margin-bottom: 16px;
+}
+.scenario-text.empty { color: var(--text-tertiary); font-style: italic; }
+.scenario-image-placeholder {
+  width: 100%;
+  aspect-ratio: 10.22 / 7.66;
+  background: var(--bg-soft);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-tertiary);
+  font-size: 13px; overflow: hidden;
+}
+.scenario-image-placeholder img { width: 100%; height: 100%; object-fit: contain; }
+.message-card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 12px; padding: 18px; margin-bottom: 16px;
+}
+.message-video-col { margin-bottom: 16px; }
+.message-video-col video {
+  width: 100%; border-radius: 8px; display: block; background: #000;
+}
+.video-placeholder {
+  width: 100%; aspect-ratio: 16 / 9;
+  background: var(--bg-soft); border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-tertiary); font-size: 12px;
+}
+
+/* =====================================================
+   ◆ Matrix table — 메시지 카드 안의 3 문항 × 5점 척도 행렬
+   ===================================================== */
+.matrix-table {
+  width: 100%; border-collapse: collapse;
+  margin-top: 4px; table-layout: fixed;
+}
+.matrix-table th {
+  font-weight: 500; font-size: 12.5px;
+  color: var(--text-secondary);
+  padding: 8px 6px; text-align: center;
+  line-height: 1.35; vertical-align: bottom;
+}
+.matrix-table th.matrix-question-header { width: 23%; }
+.matrix-table th:not(.matrix-question-header) { width: 11%; }
+.matrix-table td {
+  border-top: 1px solid var(--border);
+  padding: 12px 4px; text-align: center;
+}
+.matrix-question {
+  font-size: 13px; color: var(--text-primary);
+  text-align: left !important; line-height: 1.4;
+  padding-right: 8px !important;
+}
+.matrix-cell {
+  width: 18px; height: 18px; border-radius: 50%;
+  border: 1.5px solid var(--text-secondary);
+  margin: 0 auto; cursor: pointer;
+  transition: all 0.15s; display: block;
+}
+.matrix-cell:hover { border-color: var(--border-active); }
+.matrix-cell.selected { background: var(--border-active); border-color: var(--border-active); }
+
+/* =====================================================
+   ◆ Matrix table — 모바일(좁은 화면) 전용 레이아웃 재구성
+   7-열 헤더가 좁아서 라벨이 겹치는 문제 → 각 질문을 블록으로 분리하고
+   상단에 한 번만 스케일 안내 표시
+   ===================================================== */
+@media (max-width: 540px) {
+  .matrix-table {
+    display: block;
+    width: 100%;
+    table-layout: auto;
+  }
+  .matrix-table::before {
+    content: "1 = Strongly disagree   →   7 = Strongly agree";
+    display: block;
+    font-size: 11px;
+    color: var(--text-secondary);
+    background: var(--bg-soft);
+    border-radius: 6px;
+    padding: 8px 4px;
+    text-align: center;
+    margin-bottom: 8px;
+  }
+  .matrix-table thead { display: none; }
+  .matrix-table tbody { display: block; }
+  .matrix-table tbody tr {
+    display: block;
+    border-top: 1px solid var(--border);
+    padding: 12px 0 8px;
+  }
+  .matrix-table tbody tr:first-child {
+    border-top: none;
+    padding-top: 0;
+  }
+  .matrix-table td.matrix-question {
+    display: block;
+    width: 100% !important;
+    font-size: 13px;
+    padding: 0 0 8px 0 !important;
+    text-align: left !important;
+    line-height: 1.4;
+    border-top: none;
+  }
+  .matrix-table td:not(.matrix-question) {
+    display: inline-block;
+    width: calc(100% / 7) !important;
+    padding: 8px 0 !important;
+    text-align: center;
+    vertical-align: middle;
+    border-top: none;
+  }
+  .matrix-cell {
+    width: 20px;
+    height: 20px;
+    margin: 0 auto;
+  }
+}
+
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- =====================================================
+       상단 Progress Strip — 모든 화면에 공통으로 표시됨
+       사용자가 지금까지 선택한 내용을 누적해서 보여줌 (Live Preview)
+       ===================================================== -->
+  <div class="progress-strip" id="progressStrip">
+    <div class="preview-avatar" id="previewAvatar">
+      <i class="ti ti-question-mark" style="font-size: 22px;" aria-hidden="true"></i>
+    </div>
+    <div class="preview-info">
+      <div class="preview-name" id="previewName">Designing your agent…</div>
+      <div class="step-label" id="stepLabel">Getting started</div>
+      <div class="step-progress" id="stepProgress"></div>
+    </div>
+  </div>
+
+  <!-- =====================================================
+       시작 화면 (Intro)
+       ===================================================== -->
+  <div id="screen-intro" class="screen">
+    <div class="intro-card">
+      <h1 class="intro-title">Welcome</h1>
+      <p class="intro-desc" style="text-align: left;">Thank you for taking part in this study.<br><br>
+The survey has three parts:<br>
+(1) A few questions about your background,<br>
+(2) Questions about your safety perceptions and experience with AI,<br>
+(3) Rating AI safety agents across construction-site situations.<br><br>
+It should take about <strong>15-18 minutes</strong> to complete.</p>
+      <p class="intro-desc" style="text-align: left; background: #fef3e6; border-left: 3px solid var(--text-warm); padding: 12px 16px; border-radius: 6px;"><strong>Eligibility:</strong> This study is for adults aged 18 or older who currently work, or have previously worked, on construction sites. If this does not describe you, please do not continue.</p>
+      <button class="btn btn-primary" onclick="goToStep('d1')">Begin →</button>
+    </div>
+  </div>
+
+  <!-- =====================================================
+       Demographics page 1 — Q1-6 (name, age, gender, country, education, experience)
+       ===================================================== -->
+  <div id="screen-demo-1" class="screen hidden">
+    <div class="section-divider">About you</div>
+    <h2 class="question">Tell us a bit about yourself</h2>
+    <p class="question-sub">The following questions are asked to better understand the participants. Please answer them accordingly.</p>
+
+    <div class="form-group">
+      <label class="form-label">1. What is your name?</label>
+      <div class="name-row">
+        <input type="text" class="text-input" id="firstName" placeholder="First name" autocomplete="given-name" oninput="filterNameInput(this); updateDemo1Next()">
+        <input type="text" class="text-input" id="lastName" placeholder="Last name" autocomplete="family-name" oninput="filterNameInput(this); updateDemo1Next()">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="age">2. How old are you?</label>
+      <input type="text" inputmode="numeric" class="number-input" id="age" maxlength="3" placeholder="Years" oninput="filterAgeInput(this); updateDemo1Next()">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">3. What is your gender?</label>
+      <div class="radio-group">
+        <div class="radio-item" data-field="participantGender" data-value="male" onclick="selectRadio(this)">Male</div>
+        <div class="radio-item" data-field="participantGender" data-value="female" onclick="selectRadio(this)">Female</div>
+        <div class="radio-item" data-field="participantGender" data-value="nonbinary" onclick="selectRadio(this)">Non-binary</div>
+        <div class="radio-item" data-field="participantGender" data-value="prefer_not" onclick="selectRadio(this)">Prefer not to say</div>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="country">4. In which country do you currently reside?</label>
+      <select class="select-input" id="country" onchange="updateDemo1Next()">
+        <option value="">— Select —</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="education">5. What is the highest level of school you have completed or the highest degree you have received?</label>
+      <select class="select-input" id="education" onchange="updateDemo1Next()">
+        <option value="">— Select —</option>
+        <option value="less_than_hs">Less than high school</option>
+        <option value="hs">High school diploma or equivalent</option>
+        <option value="some_college">Some college, no degree</option>
+        <option value="associate">Associate degree</option>
+        <option value="bachelor">Bachelor's degree</option>
+        <option value="master">Master's degree</option>
+        <option value="professional">Professional degree (e.g. MD, JD)</option>
+        <option value="doctorate">Doctoral degree</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="yearsOnSite">6. How many years have you worked on construction sites?</label>
+      <select class="select-input" id="yearsOnSite" onchange="updateDemo1Next()">
+        <option value="">— Select —</option>
+        <option value="less_than_1">Less than 1 year</option>
+        <option value="1_5">1–5 years</option>
+        <option value="6_10">6–10 years</option>
+        <option value="11_20">11–20 years</option>
+        <option value="more_than_20">More than 20 years</option>
+      </select>
+    </div>
+
+    <div class="nav-controls">
+      <button class="btn" onclick="goToStep(0)">← Back</button>
+      <button class="btn btn-primary" id="next-demo-1" disabled onclick="goToStep('d2')">Next →</button>
+    </div>
+  </div>
+
+  <!-- =====================================================
+       Demographics page 2 — Q7-13 (risk perception + AI experience)
+       ===================================================== -->
+  <div id="screen-demo-2" class="screen hidden">
+    <div class="section-divider">About you</div>
+    <h2 class="question">Your perspective</h2>
+    <p class="question-sub">For each statement, select the point on the scale that best reflects you.</p>
+
+    <div class="perspective-group">
+      <h3 class="perspective-group-title">Construction Site Risk Perception</h3>
+      <p class="perspective-group-desc">These questions ask how you generally perceive risk and accident severity in construction work.</p>
+
+      <div class="form-group">
+        <label class="form-label">7. I think accidents on construction sites can lead to severe injuries or death.</label>
+        <div class="likert-row" data-field="riskInjury">
+          <div class="likert-option" data-value="1" onclick="selectLikert(this)"><div class="likert-label">Strongly disagree</div><div class="likert-circle"></div></div>
+          <div class="likert-option" data-value="2" onclick="selectLikert(this)"><div class="likert-label">Disagree</div><div class="likert-circle"></div></div>
+          <div class="likert-option" data-value="3" onclick="selectLikert(this)"><div class="likert-label">Neutral</div><div class="likert-circle"></div></div>
+          <div class="likert-option" data-value="4" onclick="selectLikert(this)"><div class="likert-label">Agree</div><div class="likert-circle"></div></div>
+          <div class="likert-option" data-value="5" onclick="selectLikert(this)"><div class="likert-label">Strongly agree</div><div class="likert-circle"></div></div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">8. I think my work on construction sites involves serious risk.</label>
+        <div class="likert-row" data-field="riskOwnWork">
+          <div class="likert-option" data-value="1" onclick="selectLikert(this)"><div class="likert-label">Strongly disagree</div><div class="likert-circle"></div></div>
+          <div class="likert-option" data-value="2" onclick="selectLikert(this)"><div class="likert-label">Disagree</div><div class="likert-circle"></div></div>
+          <div class="likert-option" data-value="3" onclick="selectLikert(this)"><div class="likert-label">Neutral</div><div class="likert-circle"></div></div>
+          <div class="likert-option" data-value="4" onclick="selectLikert(this)"><div class="likert-label">Agree</div><div class="likert-circle"></div></div>
+          <div class="likert-option" data-value="5" onclick="selectLikert(this)"><div class="likert-label">Strongly agree</div><div class="likert-circle"></div></div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">9. I think a serious accident could happen to me at work.</label>
+        <div class="likert-row" data-field="riskOwnAccident">
+          <div class="likert-option" data-value="1" onclick="selectLikert(this)"><div class="likert-label">Strongly disagree</div><div class="likert-circle"></div></div>
+          <div class="likert-option" data-value="2" onclick="selectLikert(this)"><div class="likert-label">Disagree</div><div class="likert-circle"></div></div>
+          <div class="likert-option" data-value="3" onclick="selectLikert(this)"><div class="likert-label">Neutral</div><div class="likert-circle"></div></div>
+          <div class="likert-option" data-value="4" onclick="selectLikert(this)"><div class="likert-label">Agree</div><div class="likert-circle"></div></div>
+          <div class="likert-option" data-value="5" onclick="selectLikert(this)"><div class="likert-label">Strongly agree</div><div class="likert-circle"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="perspective-group">
+      <h3 class="perspective-group-title">AI Experience and Perception</h3>
+      <p class="perspective-group-desc">These questions ask about your experience with AI tools and your perception of AI systems in construction settings.</p>
+
+      <div class="form-group">
+        <label class="form-label">10. How often do you use AI-powered tools or services?</label>
+        <p class="form-hint">e.g., ChatGPT, Siri, or AI translation apps.</p>
+        <div class="likert-row" data-field="aiUsage">
+          <div class="likert-option" data-value="1" onclick="selectLikert(this)"><div class="likert-label">Never</div><div class="likert-circle"></div></div>
+          <div class="likert-option" data-value="2" onclick="selectLikert(this)"><div class="likert-label">Rarely</div><div class="likert-circle"></div></div>
+          <div class="likert-option" data-value="3" onclick="selectLikert(this)"><div class="likert-label">Sometimes</div><div class="likert-circle"></div></div>
+          <div class="likert-option" data-value="4" onclick="selectLikert(this)"><div class="likert-label">Often</div><div class="likert-circle"></div></div>
+          <div class="likert-option" data-value="5" onclick="selectLikert(this)"><div class="likert-label">Very often</div><div class="likert-circle"></div></div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">11. How familiar are you with AI technologies?</label>
+        <div class="likert-row" data-field="aiFamiliarity">
+          <div class="likert-option" data-value="1" onclick="selectLikert(this)"><div class="likert-label">Not at all</div><div class="likert-circle"></div></div>
+          <div class="likert-option" data-value="2" onclick="selectLikert(this)"><div class="likert-label">Slightly</div><div class="likert-circle"></div></div>
+          <div class="likert-option" data-value="3" onclick="selectLikert(this)"><div class="likert-label">Moderately</div><div class="likert-circle"></div></div>
+          <div class="likert-option" data-value="4" onclick="selectLikert(this)"><div class="likert-label">Very</div><div class="likert-circle"></div></div>
+          <div class="likert-option" data-value="5" onclick="selectLikert(this)"><div class="likert-label">Extremely</div><div class="likert-circle"></div></div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">12. How familiar are you with the use of AI technologies in the construction industry?</label>
+        <p class="form-hint">e.g., AI safety monitoring, hazard detection, or construction robots.</p>
+        <div class="likert-row" data-field="aiFamiliarityConstruction">
+          <div class="likert-option" data-value="1" onclick="selectLikert(this)"><div class="likert-label">Not at all</div><div class="likert-circle"></div></div>
+          <div class="likert-option" data-value="2" onclick="selectLikert(this)"><div class="likert-label">Slightly</div><div class="likert-circle"></div></div>
+          <div class="likert-option" data-value="3" onclick="selectLikert(this)"><div class="likert-label">Moderately</div><div class="likert-circle"></div></div>
+          <div class="likert-option" data-value="4" onclick="selectLikert(this)"><div class="likert-label">Very</div><div class="likert-circle"></div></div>
+          <div class="likert-option" data-value="5" onclick="selectLikert(this)"><div class="likert-label">Extremely</div><div class="likert-circle"></div></div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">13. How much would you trust an AI-based system on a construction site?</label>
+        <div class="likert-row" data-field="aiTrust">
+          <div class="likert-option" data-value="1" onclick="selectLikert(this)"><div class="likert-label">Not at all</div><div class="likert-circle"></div></div>
+          <div class="likert-option" data-value="2" onclick="selectLikert(this)"><div class="likert-label">Slightly</div><div class="likert-circle"></div></div>
+          <div class="likert-option" data-value="3" onclick="selectLikert(this)"><div class="likert-label">Moderately</div><div class="likert-circle"></div></div>
+          <div class="likert-option" data-value="4" onclick="selectLikert(this)"><div class="likert-label">Quite a bit</div><div class="likert-circle"></div></div>
+          <div class="likert-option" data-value="5" onclick="selectLikert(this)"><div class="likert-label">Completely</div><div class="likert-circle"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="nav-controls">
+      <button class="btn" onclick="goToStep('d1')">← Back</button>
+      <button class="btn btn-primary" id="next-demo-2" disabled onclick="enterScenarioPhase()">Next →</button>
+    </div>
+  </div>
+
+  <!-- =====================================================
+       Scenario phase — 2개 상황 블록 × 12개 agent (상황/agent 순서 랜덤)
+       이미지: anthropomorphism+gender / 음성: gender+warmth / 자막: 음성에 동기화
+       ===================================================== -->
+  <div id="screen-scenario" class="screen hidden">
+    <div class="train-progress"><div class="train-progress-fill" id="trainProgressFill"></div></div>
+    <h2 class="question">Review and Rate the AI Safety Agent</h2>
+    <p class="question-sub">Look at the agent's image, listen to its safety message, then rate the statements below.</p>
+    <div class="situation-label" id="situationLabel">Safety Training Situation</div>
+
+    <div class="training-image" id="trainingImage">
+      <span>[Agent image]</span>
+    </div>
+
+    <div class="audio-player">
+      <button class="play-btn-lg" id="trainingPlayBtn" onclick="toggleTrainingAudio()" aria-label="Play message">
+        <i class="ti ti-player-play"></i>
+      </button>
+      <div class="subtitle-box empty" id="subtitleBox">Press play to hear the agent's safety message.</div>
+    </div>
+    <audio id="trainingAudio" preload="auto"></audio>
+
+    <h3 class="sub-heading" style="margin-top: 24px;">Based on this agent, please rate how much you agree with each statement.</h3>
+
+    <div id="trainingMatrix"></div>
+
+    <div class="nav-controls">
+      <button class="btn" id="scenario-back" onclick="goToPreviousTraining()">← Back</button>
+      <button class="btn btn-primary" id="scenario-next" disabled onclick="goToNextTraining()">Next →</button>
+    </div>
+  </div>
+
+  <!-- =====================================================
+       Thank you — 모든 응답 제출 완료 후 표시
+       ===================================================== -->
+  <div id="screen-thanks" class="screen hidden">
+    <div class="intro-card">
+      <h1 class="intro-title">Thank you!</h1>
+      <p class="intro-desc">Your responses have been recorded successfully.<br>We greatly appreciate your participation in this study.</p>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* =====================================================
+   ◆ 설정 — 배포 시 여기만 수정하면 됨
+   ===================================================== */
+// Google Apps Script 웹 앱 URL (배포 후 발급받은 https://script.google.com/.../exec)
+const SHEET_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzPXeCb3x8x-N_yXTDSf3kIIS1OAyRadVkGOSI9am0W_nPk_Q7mw5xfw52nCIN1mRaM/exec';
+
+// 개발용 — true일 때 입력 검증/30초 휴식 모두 스킵. 실제 배포 시 false로 변경.
+const DEV_MODE = true;
+
+/* =====================================================
+   ◆ Prolific 등 외부에서 전달된 URL 파라미터 캡쳐
+   ===================================================== */
+const _params = new URLSearchParams(window.location.search);
+const participantInfo = {
+  prolificPid: _params.get('PROLIFIC_PID') || '',
+  studyId:     _params.get('STUDY_ID')     || '',
+  sessionId:   _params.get('SESSION_ID')   || ''
+};
+
+/* =====================================================
+   ◆ 데이터 저장 — Demographics + 6개 디자인 선택
+   ===================================================== */
+const demographics = {
+  firstName: '',
+  lastName: '',
+  age: '',
+  participantGender: null,
+  country: '',
+  education: '',
+  yearsOnSite: '',
+  riskInjury: null,
+  riskOwnWork: null,
+  riskOwnAccident: null,
+  aiUsage: null,
+  aiFamiliarity: null,
+  aiFamiliarityConstruction: null,
+  aiTrust: null
+};
+
+const selections = {
+  anthropomorphism: null,
+  gender: null,
+  warmth: null,
+  authority: null,
+  expertise: null,
+  role: null
+};
+
+// step 7에서 자신의 페르소나에 대한 평가 (5개 차원, 5점 척도)
+const agentEval = {
+  eval_warmth:     null,
+  eval_competence: null,
+  eval_comfort:    null,
+  eval_trust:      null,
+  eval_acceptance: null
+};
+
+// 정해진 페르소나(HM-MA-CL-DR-EX-SV)에 대한 평가 — step 7 다음 페이지에서 사용
+const fixedAgentEval = {
+  fixedeval_warmth:     null,
+  fixedeval_competence: null,
+  fixedeval_comfort:    null,
+  fixedeval_trust:      null,
+  fixedeval_acceptance: null
+};
+
+// 정해진 페르소나 평가 페이지에서 보여줄 페르소나 (모든 참여자 동일)
+const FIXED_EVAL_PERSONA = {
+  anthropomorphism: 'humanoid', gender: 'male', warmth: 'cool',
+  authority: 'directive', expertise: 'expert', role: 'supervisor'
+};
+
+// 페르소나 비디오 — (구버전 '페르소나 직접 디자인' 단계의 잔재. 현재 설문 흐름에서는 사용되지 않음)
+// 삭제된 영상 파일(Humanoid.mp4, UGV & UAV.mp4)을 참조하지 않도록 비워 둠.
+const PERSONA_VIDEOS = {};
+
+// 페르소나 자기소개 — 5개 차원에서 조합으로 생성 (오디오 파일과 일치하도록 원본 wording 유지)
+function buildPersonaIntro(persona) {
+  if (!persona) return null;
+  const dims = ['gender','warmth','authority','expertise','role'];
+  if (!dims.every(function(k) { return persona[k]; })) return null;
+
+  const isWarm = persona.warmth === 'warm';
+  const isPeer = persona.role === 'peer';
+  const isExpert = persona.expertise === 'expert';
+  const isDirective = persona.authority === 'directive';
+  const name = persona.gender === 'male' ? 'Alex' : 'Sarah';
+
+  const greeting = isWarm ? (isPeer ? "Hey, " : "Hi, ") : "";
+  // Peer + Warm: "your coworker on this site" / Peer + Cool: "a crew member on this site"
+  // Supervisor: "your safety supervisor" (warmth와 무관)
+  const roleTitle = isPeer
+    ? (isWarm ? "your coworker on this site" : "a crew member on this site")
+    : "your safety supervisor";
+  const expertiseLine = isExpert
+    ? "I'm trained on OSHA standards and construction safety regulations."
+    : "I'm here to make sure everyone goes home safe.";
+  const warmthLine = isWarm
+    ? "I care about every one of you, your safety is personal to me."
+    : "Maintaining safety standards on this site is my priority.";
+  const authorityLine = isDirective
+    ? "When I give a safety instruction, I need you to follow it, no exceptions."
+    : "Let's work together to keep this site safe, your input matters.";
+
+  return greeting + "I'm " + name + ", " + roleTitle + ". "
+       + expertiseLine + " " + warmthLine + " " + authorityLine;
+}
+
+// PERSONA_INTROS는 더 이상 직접 사용하지 않음 — buildPersonaIntro() 함수가 동일 결과 생성
+// 아래 객체는 호환성/참고용으로 비워둠 (필요 시 특정 키만 override할 수 있도록 placeholder)
+const PERSONA_INTROS = {
+}
+/* =====================================================
+   ◆ 국가 목록 (Q4 드롭다운 채우기)
+   ===================================================== */
+const COUNTRIES = [
+  "Afghanistan","Albania","Algeria","Andorra","Angola","Antigua and Barbuda",
+  "Argentina","Armenia","Australia","Austria","Azerbaijan","Bahamas","Bahrain",
+  "Bangladesh","Barbados","Belarus","Belgium","Belize","Benin","Bhutan","Bolivia",
+  "Bosnia and Herzegovina","Botswana","Brazil","Brunei","Bulgaria","Burkina Faso",
+  "Burundi","Cabo Verde","Cambodia","Cameroon","Canada","Central African Republic",
+  "Chad","Chile","China","Colombia","Comoros","Congo (Democratic Republic)",
+  "Congo (Republic)","Costa Rica","Côte d'Ivoire","Croatia","Cuba","Cyprus",
+  "Czech Republic","Denmark","Djibouti","Dominica","Dominican Republic",
+  "East Timor","Ecuador","Egypt","El Salvador","Equatorial Guinea","Eritrea",
+  "Estonia","Eswatini","Ethiopia","Fiji","Finland","France","Gabon","Gambia",
+  "Georgia","Germany","Ghana","Greece","Grenada","Guatemala","Guinea",
+  "Guinea-Bissau","Guyana","Haiti","Honduras","Hungary","Iceland","India",
+  "Indonesia","Iran","Iraq","Ireland","Israel","Italy","Jamaica","Japan",
+  "Jordan","Kazakhstan","Kenya","Kiribati","Korea (North)","Korea (South)",
+  "Kosovo","Kuwait","Kyrgyzstan","Laos","Latvia","Lebanon","Lesotho","Liberia",
+  "Libya","Liechtenstein","Lithuania","Luxembourg","Madagascar","Malawi",
+  "Malaysia","Maldives","Mali","Malta","Marshall Islands","Mauritania",
+  "Mauritius","Mexico","Micronesia","Moldova","Monaco","Mongolia","Montenegro",
+  "Morocco","Mozambique","Myanmar","Namibia","Nauru","Nepal","Netherlands",
+  "New Zealand","Nicaragua","Niger","Nigeria","North Macedonia","Norway",
+  "Oman","Pakistan","Palau","Palestine","Panama","Papua New Guinea","Paraguay",
+  "Peru","Philippines","Poland","Portugal","Qatar","Romania","Russia","Rwanda",
+  "Saint Kitts and Nevis","Saint Lucia","Saint Vincent and the Grenadines",
+  "Samoa","San Marino","São Tomé and Príncipe","Saudi Arabia","Senegal","Serbia",
+  "Seychelles","Sierra Leone","Singapore","Slovakia","Slovenia","Solomon Islands",
+  "Somalia","South Africa","South Sudan","Spain","Sri Lanka","Sudan","Suriname",
+  "Sweden","Switzerland","Syria","Taiwan","Tajikistan","Tanzania","Thailand",
+  "Togo","Tonga","Trinidad and Tobago","Tunisia","Turkey","Turkmenistan","Tuvalu",
+  "Uganda","Ukraine","United Arab Emirates","United Kingdom","United States",
+  "Uruguay","Uzbekistan","Vanuatu","Vatican City","Venezuela","Vietnam","Yemen",
+  "Zambia","Zimbabwe"
+];
+
+function populateCountryDropdown() {
+  const select = document.getElementById('country');
+  COUNTRIES.forEach(function(c) {
+    const opt = document.createElement('option');
+    opt.value = c;
+    opt.textContent = c;
+    select.appendChild(opt);
+  });
+}
+
+/* =====================================================
+   ◆ Demographics — 라디오 / Likert 선택 + 검증
+   ===================================================== */
+function selectRadio(el) {
+  const field = el.dataset.field;
+  el.parentNode.querySelectorAll('.radio-item').forEach(function(s) { s.classList.remove('selected'); });
+  el.classList.add('selected');
+  demographics[field] = el.dataset.value;
+  updateDemoNav();
+}
+
+function selectLikert(el) {
+  const row = el.parentNode;
+  const field = row.dataset.field;
+  row.querySelectorAll('.likert-option').forEach(function(s) { s.classList.remove('selected'); });
+  el.classList.add('selected');
+  demographics[field] = el.dataset.value;
+  updateDemoNav();
+}
+
+// 입력 필터 — 이름 필드는 숫자/특수문자 제거, 나이 필드는 숫자만 허용
+function filterNameInput(el) {
+  el.value = el.value.replace(/[^a-zA-ZÀ-ſ一-鿿가-힯\s'-]/g, '');
+}
+function filterAgeInput(el) {
+  el.value = el.value.replace(/\D/g, '');
+}
+
+// 인구통계 두 페이지의 Next 버튼 검증을 함께 갱신 (선택 핸들러에서 호출)
+function updateDemoNav() {
+  updateDemo1Next();
+  updateDemo2Next();
+}
+
+// 페이지 1 (Q1-6) 검증
+function updateDemo1Next() {
+  demographics.firstName   = document.getElementById('firstName').value.trim();
+  demographics.lastName    = document.getElementById('lastName').value.trim();
+  demographics.age         = document.getElementById('age').value.trim();
+  demographics.country     = document.getElementById('country').value;
+  demographics.education   = document.getElementById('education').value;
+  demographics.yearsOnSite = document.getElementById('yearsOnSite').value.trim();
+
+  const btn = document.getElementById('next-demo-1');
+  if (!btn) return;
+  if (DEV_MODE) { btn.disabled = false; return; }
+
+  const allFilled =
+    demographics.firstName && demographics.lastName &&
+    demographics.age && demographics.participantGender &&
+    demographics.country && demographics.education &&
+    demographics.yearsOnSite !== '';
+  btn.disabled = !allFilled;
+}
+
+// 페이지 2 (Q7-13) 검증
+function updateDemo2Next() {
+  const btn = document.getElementById('next-demo-2');
+  if (!btn) return;
+  if (DEV_MODE) { btn.disabled = false; return; }
+
+  const allFilled =
+    demographics.riskInjury && demographics.riskOwnWork &&
+    demographics.riskOwnAccident && demographics.aiUsage &&
+    demographics.aiFamiliarity && demographics.aiFamiliarityConstruction &&
+    demographics.aiTrust;
+  btn.disabled = !allFilled;
+}
+
+/* =====================================================
+   ◆ 표시용 라벨 (영문 옵션값을 사람이 읽기 좋은 라벨로 변환)
+   ===================================================== */
+const VALUE_LABELS = {
+  humanoid: 'Human-like', robotlike: 'Robot-like',
+  male: 'Male', female: 'Female',
+  warm: 'Warm', cool: 'Cool',
+  directive: 'Directive', collaborative: 'Collaborative',
+  expert: 'Certified Expert', general: 'General Helper',
+  supervisor: 'Supervisor', peer: 'Peer / Coworker'
+};
+const ATTR_LABELS = {
+  anthropomorphism: 'Body type',
+  gender: 'Voice / Identity',
+  warmth: 'Warmth',
+  authority: 'Authority style',
+  expertise: 'Expertise',
+  role: 'Role'
+};
+
+// completionCode 생성용 2-letter 약어 (예: HM-FE-WM-CB-EX-PR)
+const CODE_ABBR = {
+  humanoid: 'HM', robotlike: 'RB',
+  male:     'MA', female:    'FE',
+  warm:     'WM', cool:      'CL',
+  directive:'DR', collaborative: 'CB',
+  expert:   'EX', general:   'GN',
+  supervisor:'SV', peer:     'PR'
+};
+
+let currentStep = 0;
+let completionCode = '';
+
+/* =====================================================
+   ◆ 화면 전환
+   ===================================================== */
+function goToStep(n) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+  let target;
+  if (n === 0)         target = 'screen-intro';
+  else if (n === 'd1') target = 'screen-demo-1';
+  else if (n === 'd2') target = 'screen-demo-2';
+  else if (n === 'di') target = 'screen-design-intro';
+  else if (n === 's')      target = 'screen-scenario';
+  else if (n === 'fe')     target = 'screen-fixedeval';
+  else if (n === 'si')     target = 'screen-scenario-intro';
+  else if (n === 'thanks') target = 'screen-thanks';
+  else                     target = 'screen-' + n;
+  const el = document.getElementById(target);
+  if (el) el.classList.remove('hidden');
+  currentStep = n;
+  updateProgressStrip();
+  if (n === 7)    renderSummary();
+  if (n === 'fe') renderFixedEvalPage();
+  window.scrollTo(0, 0);
+}
+
+/* =====================================================
+   ◆ 카드 선택 처리
+   ===================================================== */
+function selectOption(cardEl) {
+  const attr = cardEl.dataset.attr;
+  const value = cardEl.dataset.value;
+  document.querySelectorAll('[data-attr="' + attr + '"]').forEach(c => c.classList.remove('selected'));
+  cardEl.classList.add('selected');
+  selections[attr] = value;
+  const nextBtn = document.getElementById('next-' + currentStep);
+  if (nextBtn) nextBtn.disabled = false;
+  updateProgressStrip();
+}
+
+/* =====================================================
+   ◆ 음성 샘플 재생 — sampleId에 따라 Voice/ 폴더의 음성 파일 재생
+   ===================================================== */
+// (구버전 음성 샘플 잔재 — 삭제된 Voice/ 파일을 참조하지 않도록 비워 둠)
+const VOICE_SAMPLES = {};
+function playAudio(sampleId, btnEl) {
+  const url = VOICE_SAMPLES[sampleId];
+  if (!url) return;
+  playMessage(url, btnEl);
+}
+
+/* =====================================================
+   ◆ 상단 Progress Strip 업데이트
+   ===================================================== */
+function updateProgressStrip() {
+  // 상단 strip은 design 단계(step 1~6)에서만 노출 — 그 외 페이지는 모두 숨김
+  const hideStrip = currentStep !== 1 && currentStep !== 2 && currentStep !== 3 && currentStep !== 4 && currentStep !== 5 && currentStep !== 6;
+  document.getElementById('progressStrip').style.display = hideStrip ? 'none' : '';
+
+  const progressEl = document.getElementById('stepProgress');
+  const isDesignStep = typeof currentStep === 'number' && currentStep >= 1 && currentStep <= 6;
+  const isDesignComplete = currentStep === 7;
+  const isScenarioStep = currentStep === 's';
+
+  // Design 단계: 6 dots / Scenario(평가) 단계: 24 dots
+  const totalDots = isScenarioStep ? scenarioSequence.length : 6;
+  let dots = '';
+  for (let i = 1; i <= totalDots; i++) {
+    let cls = 'step-dot';
+    if (isScenarioStep) {
+      const active = currentScenarioIdx + 1;
+      if (i < active)        cls += ' done';
+      else if (i === active) cls += ' active';
+    } else if (isDesignComplete) {
+      cls += ' done';
+    } else if (isDesignStep) {
+      if (i < currentStep)        cls += ' done';
+      else if (i === currentStep) cls += ' active';
+    }
+    dots += '<div class="' + cls + '"></div>';
+  }
+  progressEl.innerHTML = dots;
+
+  document.getElementById('stepLabel').textContent =
+    currentStep === 'di' ? 'Getting started' :
+    currentStep === 7    ? 'Design complete' :
+    currentStep === 's'  ? 'Agent ' + (currentScenarioIdx + 1) + ' of ' + scenarioSequence.length :
+    'Step ' + currentStep + ' of 6';
+
+  const previewNameEl = document.getElementById('previewName');
+  const avatarEl = document.getElementById('previewAvatar');
+
+  if (isScenarioStep) {
+    // 시나리오 평가 단계 — 디자인된 에이전트 대신 평가 활동을 나타냄
+    previewNameEl.textContent = 'Listening and rating';
+    avatarEl.innerHTML = '<i class="ti ti-messages" style="font-size: 24px;"></i>';
+  } else {
+    // 디자인 단계 — 지금까지 선택한 페르소나를 누적해 보여줌
+    const parts = [];
+    for (const k of ['anthropomorphism','gender','warmth','authority','expertise','role']) {
+      if (selections[k]) parts.push(VALUE_LABELS[selections[k]]);
+    }
+    previewNameEl.textContent =
+      parts.length === 0 ? 'Designing your agent…' : 'Your agent: ' + parts.join(' · ');
+
+    if (selections.anthropomorphism === 'humanoid') {
+      avatarEl.innerHTML = '<i class="ti ti-user" style="font-size: 24px;"></i>';
+    } else if (selections.anthropomorphism === 'robotlike') {
+      avatarEl.innerHTML = '<i class="ti ti-robot" style="font-size: 24px;"></i>';
+    } else {
+      avatarEl.innerHTML = '<i class="ti ti-question-mark" style="font-size: 22px;"></i>';
+    }
+  }
+}
+
+/* =====================================================
+   ◆ step 7 — 페르소나 이미지·자기소개 placeholder 채우기 + 완료 코드 생성
+   ===================================================== */
+function renderSummary() {
+  // 응답 데이터용 코드 (UI에는 표시 안 함, payload에만 포함)
+  completionCode = Object.values(selections).map(function(v) {
+    return CODE_ABBR[v] || 'XX';
+  }).join('-');
+  // 참여자 본인이 디자인한 페르소나 카드 (step 7)
+  renderPersonaCard(selections, 'personaImage', 'personaIntroText', 'personaAudioBtn');
+}
+
+/* 정해진 페르소나 평가 페이지 (step 7 다음) — FIXED_EVAL_PERSONA 기준 */
+function renderFixedEvalPage() {
+  // 충돌 감지 — 참여자가 고정 B 페르소나와 동일하게 디자인한 경우 대체 페르소나 사용
+  // (시나리오 페이즈와 동일한 페르소나를 일관되게 보여주기 위함)
+  resolvePersonaConflict();
+  const personaToShow = replacementPersonaB || FIXED_EVAL_PERSONA;
+  renderPersonaCard(personaToShow, 'fixedPersonaImage', 'fixedPersonaIntroText', 'fixedPersonaAudioBtn');
+}
+
+/* 페르소나 카드 공통 렌더러 — step 7 / fixed-eval 둘 다 사용
+   비디오: anthropomorphism으로, 자기소개: 나머지 5차원 조합으로 결정 */
+function renderPersonaCard(persona, videoElId, textElId, audioBtnElId) {
+  // 비디오 — autoplay + muted, loop 없음 → 종료 후 마지막 프레임에 정지
+  const videoFile = PERSONA_VIDEOS[persona.anthropomorphism];
+  const videoEl = document.getElementById(videoElId);
+  if (videoFile) {
+    videoEl.innerHTML = '<video src="' + videoFile + '" autoplay muted playsinline></video>';
+  } else {
+    videoEl.innerHTML = '<span>[Persona video placeholder]</span>';
+  }
+
+  // 자기소개 텍스트 — buildPersonaIntro 함수로 5차원에서 생성 (override가 필요하면 PERSONA_INTROS[key].intro로 가능)
+  const otherDims = ['gender','warmth','authority','expertise','role'];
+  const allFilled = otherDims.every(function(k) { return persona[k] !== null && persona[k] !== undefined; });
+  const introKey = allFilled
+    ? otherDims.map(function(k) { return CODE_ABBR[persona[k]]; }).join('-')
+    : null;
+  const override = introKey ? PERSONA_INTROS[introKey] : null;
+  const introText = (override && override.intro) ? override.intro : buildPersonaIntro(persona);
+
+  const textEl = document.getElementById(textElId);
+  if (introText) {
+    textEl.textContent = introText;
+    textEl.classList.remove('empty');
+  } else {
+    textEl.textContent = '[Self-introduction placeholder]';
+    textEl.classList.add('empty');
+  }
+
+  // 자기소개 오디오 — 키 기반 'Introduce/{key}.mp3' 자동 계산
+  const audioBtn = document.getElementById(audioBtnElId);
+  const audioUrl = null; // (구버전 자기소개 음성 — 삭제된 Introduce/ 파일을 참조하지 않도록 비활성화)
+  if (audioUrl) {
+    audioBtn.disabled = false;
+    audioBtn.onclick = function() { playMessage(audioUrl, audioBtn); };
+  } else {
+    audioBtn.disabled = true;
+    audioBtn.onclick = null;
+  }
+}
+
+/* step 7 평가 matrix 셀 선택 — 본인 디자인 페르소나 */
+function selectAgentEvalCell(el) {
+  const row = el.closest('tr');
+  const key = 'eval_' + row.dataset.eval;
+  row.querySelectorAll('.matrix-cell').forEach(function(c) { c.classList.remove('selected'); });
+  el.classList.add('selected');
+  agentEval[key] = parseInt(el.dataset.value, 10);
+}
+
+/* fixed-eval 페이지 평가 matrix 셀 선택 — 정해진 페르소나 */
+function selectFixedAgentEvalCell(el) {
+  const row = el.closest('tr');
+  const key = 'fixedeval_' + row.dataset.eval;
+  row.querySelectorAll('.matrix-cell').forEach(function(c) { c.classList.remove('selected'); });
+  el.classList.add('selected');
+  fixedAgentEval[key] = parseInt(el.dataset.value, 10);
+}
+
+/* =====================================================
+   ◆ 연구 완료 — Google Sheet으로 응답 전송
+   ===================================================== */
+async function finishStudy() {
+  // 현재 보이는 화면의 primary 버튼 — 시나리오 끝에서 호출되면 scenario-next, 다른 경로면 그 화면의 버튼
+  const visibleScreen = document.querySelector('.screen:not(.hidden)');
+  const btn = visibleScreen ? visibleScreen.querySelector('.btn-primary') : null;
+  const originalText = btn ? btn.textContent : '';
+  if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
+
+  const payload = {
+    timestamp: new Date().toISOString(),
+    ...participantInfo,   // prolificPid, studyId, sessionId
+    ...demographics,      // Q1-13
+    ...flattenScenarioData()  // 2 situations × 12 agents × 7 평가항목 + 표시 순서
+  };
+
+  // Apps Script 웹훅이 설정되지 않은 경우 — 테스트 환경에서는 alert로 데이터만 보여주고 thanks 페이지로
+  if (!SHEET_WEBHOOK_URL) {
+    if (btn) { btn.disabled = false; btn.textContent = originalText; }
+    alert('[DEV MODE — SHEET_WEBHOOK_URL not set]\n\n' + JSON.stringify(payload, null, 2));
+    goToStep('thanks');
+    return;
+  }
+
+  try {
+    // text/plain 으로 보내야 CORS preflight 없이 Apps Script가 받음
+    const res = await fetch(SHEET_WEBHOOK_URL, {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+
+    // 디버깅용 — 서버(Apps Script)가 돌려준 응답을 콘솔에 출력 (F12 → Console)
+    // 정상: {"result":"success","row":N} / 문제 시: {"result":"error","message":"..."}
+    try { console.log('[submit] server response:', await res.text()); }
+    catch (e) { console.log('[submit] 응답 본문을 읽지 못함 (CORS):', e); }
+
+    // 응답을 스프레드시트에 저장한 뒤 "Thank you" 화면 표시 (외부 리다이렉트 없음)
+    goToStep('thanks');
+  } catch (err) {
+    if (btn) { btn.disabled = false; btn.textContent = originalText; }
+    alert('Could not save your responses. Please check your connection and try again.\n\n(' + err.message + ')');
+  }
+}
+
+/* =====================================================
+   ◆ Scenario phase — 2 situations × 12 personas
+     상황 블록 순서 랜덤화 + 각 블록 내부 12개 agent 순서 랜덤화.
+   ===================================================== */
+
+// 12개 AI safety agent 생성
+function buildAgentPersonas() {
+  const out = [];
+  ['human', 'humanoid', 'robotlike'].forEach(function(a) {
+    ['male', 'female'].forEach(function(g) {
+      ['high', 'low'].forEach(function(w) {
+        out.push({ anthropomorphism: a, gender: g, warmth: w });
+      });
+    });
+  });
+  return out;
+}
+const AGENT_PERSONAS = buildAgentPersonas(); // 12
+
+// 데이터 저장/매칭용 agent 키 (예: 'HU-MA-HW')
+function agentKey(p) {
+  const A = { human: 'HU', humanoid: 'HM', robotlike: 'RB' };
+  const G = { male: 'MA', female: 'FE' };
+  const W = { high: 'HW', low: 'LW' };
+  return A[p.anthropomorphism] + '-' + G[p.gender] + '-' + W[p.warmth];
+}
+
+const SITUATIONS = {
+  training: {
+    label: 'Safety Training Briefing',
+    imageFolder: 'Image/Training',
+    audioFolder: 'Audio/Training'
+  },
+  warning: {
+    label: 'Hazard Warning Message',
+    imageFolder: 'Image/Warning',
+    audioFolder: 'Audio/Warning'
+  }
+};
+const SITUATION_KEYS = ['training', 'warning'];
+
+function scenarioKey(situation, persona) {
+  return situation + '_' + agentKey(persona);
+}
+
+// 이미지 — situation + anthropomorphism + gender 로 결정
+// Warning: human은 visual appearance로 gender 조작
+//   human male/female → Warning_Male.png / Warning_Female.png
+//   humanoid → Warning_Humanoid.png, robotlike → Warning_UGV.png
+//   humanoid/robotlike의 gender는 voice characteristics로 조작
+function scenarioImage(situation, p) {
+  if (situation === 'training') {
+    if (p.anthropomorphism === 'human')    return SITUATIONS.training.imageFolder + '/' + (p.gender === 'male' ? 'Training_Male.png' : 'Training_Female.png');
+    if (p.anthropomorphism === 'humanoid') return SITUATIONS.training.imageFolder + '/Training_Humanoid.png';
+    return SITUATIONS.training.imageFolder + '/Training_SPOT.png';
+  }
+
+  if (p.anthropomorphism === 'human')    return SITUATIONS.warning.imageFolder + '/' + (p.gender === 'male' ? 'Warning_Male.png' : 'Warning_Female.png');
+  if (p.anthropomorphism === 'humanoid') return SITUATIONS.warning.imageFolder + '/Warning_Humanoid.png';
+  return SITUATIONS.warning.imageFolder + '/Warning_UGV.png';
+}
+
+// 음성 — situation + gender + warmth 로 결정
+// Warning: Warning_High/Low_Male/Female.wav 조합으로 gender + warmth 조작
+function scenarioAudio(situation, p) {
+  const g = p.gender === 'male' ? 'Male' : 'Female';
+  if (situation === 'training') {
+    const w = p.warmth === 'high' ? 'High-Warmth' : 'Low-Warmth';
+    return SITUATIONS.training.audioFolder + '/Training_' + g + '_' + w + '.wav';
+  }
+
+  const w = p.warmth === 'high' ? 'High' : 'Low';
+  return SITUATIONS.warning.audioFolder + '/Warning_' + w + '_' + g + '.wav';
+}
+
+/* ── 자막 (음성에 동기화) ──────────────────────────────
+   자막은 WARMTH(high/low)에 의해서만 결정 → 2종.
+   각 배열은 "한 줄씩 표시할 문장"의 목록. 타임스탬프는 적지 않는다.
+   재생 시 음성 길이(audio.duration)를 읽어, 각 줄의 글자 수에 비례해
+   자동으로 구간을 나눠 한 줄씩 표시한다(아래 buildCuesFromDuration).
+   → 음성 파일을 교체해 길이가 달라져도 자동으로 다시 맞춰진다.
+   문장만 실제 대사와 일치시키면 되고, 초 단위 타이밍은 신경 쓸 필요 없다.
+   ──────────────────────────────────────────────────── */
+const TRAINING_SUBTITLES = {
+  high: [
+    "Hello, everyone.",
+    "Before we begin today's lifting work, I'd like to share one important safety reminder.",
+    "Please stay clear of suspended loads and remain outside the lifting zone.",
+    "Your safety is our top priority, and by looking out for one another, we can help make sure everyone goes home safely today.",
+    "Thank you for your cooperation."
+  ],
+  low: [
+    "Attention. This briefing covers a required safety procedure.",
+    "Personnel shall not walk or stand beneath suspended loads and must remain outside the lifting zone.",
+    "Compliance with these requirements is mandatory during all lifting operations.",
+    "Follow all site safety procedures."
+  ]
+};
+function trainingSubtitles(p) {
+  return TRAINING_SUBTITLES[p.warmth === 'high' ? 'high' : 'low'] || [];
+}
+
+const WARNING_SUBTITLES = {
+  high: [
+    "Excuse me.",
+    "Please step away from the lifting area for your safety.",
+    "There is a suspended load overhead."
+  ],
+  low: [
+    "Leave the lifting zone immediately.",
+    "A suspended load is overhead.",
+    "Follow site safety procedures."
+  ]
+};
+function warningSubtitles(p) {
+  return WARNING_SUBTITLES[p.warmth === 'high' ? 'high' : 'low'] || [];
+}
+
+function scenarioSubtitles(situation, p) {
+  if (situation === 'training') return trainingSubtitles(p);
+  if (situation === 'warning') return warningSubtitles(p);
+  return [];
+}
+
+// 음성 길이를 받아 각 줄의 글자 수에 비례해 [start, end) 구간을 계산
+function buildCuesFromDuration(lines, duration) {
+  if (!isFinite(duration) || duration <= 0 || !lines.length) return [];
+  const totalChars = lines.reduce(function(s, l) { return s + l.length; }, 0) || 1;
+  const cues = [];
+  let acc = 0;
+  for (const line of lines) {
+    const start = (acc / totalChars) * duration;
+    acc += line.length;
+    const end = (acc / totalChars) * duration;
+    cues.push({ start: start, end: end, text: line });
+  }
+  return cues;
+}
+
+// 평가 항목 7개 (7점 리커트). key=데이터 컬럼명, label=화면에 보이는 질문 문장.
+const EVAL_ITEMS = [
+  { key: 'compliance',     label: 'I would follow the safety instructions provided by this AI safety agent.' },
+  { key: 'preference',     label: 'I would like to work with this AI safety agent.' },
+  { key: 'persuasiveness', label: 'I would find this AI safety agent persuasive.' },
+  { key: 'trust',          label: 'I would trust this AI safety agent to help keep me safe on the construction site.' },
+  { key: 'credibility',    label: 'I would consider this AI safety agent to be credible.' },
+  { key: 'comfort',        label: 'I would feel comfortable working with this AI safety agent.' },
+  { key: 'attention',      label: 'I would pay close attention to the information provided by this AI safety agent.' }
+];
+
+// Scenario phase 상태
+let situationOrder = [];       // ['training','warning'] 또는 ['warning','training']
+let situationPersonaOrders = { training: [], warning: [] };
+let scenarioSequence = [];     // [{ situation:'training', personaIndex:0 }, ...] 총 24개
+let currentScenarioIdx = 0;
+let scenarioResponses = {};    // { situation_personaKey: { compliance:n, preference:n, ... } }
+let currentAudio = null;      // playMessage 공용 핸들
+
+function shuffle(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function enterScenarioPhase() {
+  // 첫 진입에서만 무작위 순서 결정 (뒤로 갔다 와도 응답/순서 보존)
+  if (scenarioSequence.length === 0) {
+    situationOrder = shuffle(SITUATION_KEYS);
+    situationPersonaOrders.training = shuffle(AGENT_PERSONAS.map(function(_, i) { return i; }));
+    situationPersonaOrders.warning = shuffle(AGENT_PERSONAS.map(function(_, i) { return i; }));
+
+    scenarioSequence = [];
+    situationOrder.forEach(function(situation) {
+      situationPersonaOrders[situation].forEach(function(personaIndex) {
+        scenarioSequence.push({ situation: situation, personaIndex: personaIndex });
+      });
+    });
+
+    SITUATION_KEYS.forEach(function(situation) {
+      AGENT_PERSONAS.forEach(function(p) { scenarioResponses[scenarioKey(situation, p)] = {}; });
+    });
+  }
+  currentScenarioIdx = 0;
+  showCurrentScenario();
+  goToStep('s');
+}
+
+function showCurrentScenario() {
+  const item = scenarioSequence[currentScenarioIdx];
+  const persona = AGENT_PERSONAS[item.personaIndex];
+  const situation = item.situation;
+
+  // 진행 바 — 현재 단계 비율로 채움 (숫자 대신 직관적인 막대)
+  const pct = ((currentScenarioIdx + 1) / scenarioSequence.length) * 100;
+  document.getElementById('trainProgressFill').style.width = pct + '%';
+  document.getElementById('situationLabel').textContent = SITUATIONS[situation].label;
+
+  // 이미지
+  const imgEl = document.getElementById('trainingImage');
+  const imgSrc = scenarioImage(situation, persona);
+  imgEl.innerHTML = imgSrc
+    ? '<img src="' + imgSrc + '" alt="AI safety agent">'
+    : '<span>[Agent image]</span>';
+
+  // 음성 + 자막
+  setupScenarioAudio(situation, persona);
+
+  // 7문항 × 7점 평가 matrix
+  document.getElementById('trainingMatrix').innerHTML = buildEvalMatrixHTML(situation, persona);
+  restoreScenarioResponses(situation, persona);
+
+  checkTrainingComplete();
+  document.getElementById('scenario-next').textContent =
+    (currentScenarioIdx === scenarioSequence.length - 1) ? 'Submit →' : 'Next →';
+  updateProgressStrip();
+  window.scrollTo(0, 0);
+}
+
+// 음성 플레이어 + 자막 동기화 설정 (상황/agent마다 src/자막 갱신)
+function setupScenarioAudio(situation, persona) {
+  const audio  = document.getElementById('trainingAudio');
+  const btn    = document.getElementById('trainingPlayBtn');
+  const subBox = document.getElementById('subtitleBox');
+  const lines  = scenarioSubtitles(situation, persona);
+
+  audio.pause();
+  audio.src = scenarioAudio(situation, persona);
+  audio.currentTime = 0;
+
+  btn.querySelector('i').className = 'ti ti-player-play';
+  subBox.textContent = "Press play to hear the agent's safety message.";
+  subBox.classList.add('empty');
+
+  // 음성 길이를 알게 되면 글자 수 비례로 자막 구간을 계산 (메타데이터 로드 후)
+  let cues = buildCuesFromDuration(lines, audio.duration);
+  audio.onloadedmetadata = function() { cues = buildCuesFromDuration(lines, audio.duration); };
+
+  // 재생 위치에 맞는 자막 한 줄 표시
+  audio.ontimeupdate = function() {
+    if (!lines.length) return;
+    if (!cues.length) cues = buildCuesFromDuration(lines, audio.duration);
+    const t = audio.currentTime;
+    for (let i = 0; i < cues.length; i++) {
+      if (t >= cues[i].start && t < cues[i].end) {
+        if (subBox.textContent !== cues[i].text) subBox.textContent = cues[i].text;
+        subBox.classList.remove('empty');
+        return;
+      }
+    }
+  };
+  audio.onplay  = function() {
+    btn.querySelector('i').className = 'ti ti-player-pause';
+    if (lines.length) {
+      subBox.textContent = lines[0];
+      subBox.classList.remove('empty');
+    } else {
+      subBox.textContent = "The agent's safety message is playing.";
+      subBox.classList.remove('empty');
+    }
+  };
+  audio.onpause = function() { btn.querySelector('i').className = 'ti ti-player-play'; };
+  audio.onended = function() { btn.querySelector('i').className = 'ti ti-player-play'; };
+}
+
+function toggleTrainingAudio() {
+  const audio = document.getElementById('trainingAudio');
+  if (!audio.getAttribute('src')) return;
+  if (audio.paused) {
+    if (audio.ended) audio.currentTime = 0;
+    audio.play().catch(function(){});
+  } else {
+    audio.pause();
+  }
+}
+
+function buildEvalMatrixHTML(situation, persona) {
+  const pk = scenarioKey(situation, persona);
+  const headers = ['Strongly<br>disagree', 'Disagree', 'Somewhat<br>disagree', 'Neither', 'Somewhat<br>agree', 'Agree', 'Strongly<br>agree'];
+  let html = '<div class="message-card"><table class="matrix-table"><thead><tr><th class="matrix-question-header"></th>';
+  for (const h of headers) html += '<th>' + h + '</th>';
+  html += '</tr></thead><tbody>';
+  for (const item of EVAL_ITEMS) {
+    html += '<tr data-persona="' + pk + '" data-dim="' + item.key + '">';
+    html += '<td class="matrix-question">' + item.label + '</td>';
+    for (let i = 1; i <= 7; i++) {
+      html += '<td><div class="matrix-cell" data-value="' + i + '" onclick="selectEvalCell(this)"></div></td>';
+    }
+    html += '</tr>';
+  }
+  html += '</tbody></table></div>';
+  return html;
+}
+
+function selectEvalCell(el) {
+  const row = el.closest('tr');
+  const pk = row.dataset.persona;
+  const dim = row.dataset.dim;
+  row.querySelectorAll('.matrix-cell').forEach(function(c) { c.classList.remove('selected'); });
+  el.classList.add('selected');
+  if (!scenarioResponses[pk]) scenarioResponses[pk] = {};
+  scenarioResponses[pk][dim] = parseInt(el.dataset.value, 10);
+  checkTrainingComplete();
+}
+
+function restoreScenarioResponses(situation, persona) {
+  const pk = scenarioKey(situation, persona);
+  const r = scenarioResponses[pk] || {};
+  EVAL_ITEMS.forEach(function(item) {
+    const v = r[item.key];
+    if (v) {
+      const cell = document.querySelector('tr[data-persona="' + pk + '"][data-dim="' + item.key + '"] .matrix-cell[data-value="' + v + '"]');
+      if (cell) cell.classList.add('selected');
+    }
+  });
+}
+
+function checkTrainingComplete() {
+  if (DEV_MODE) { document.getElementById('scenario-next').disabled = false; return; }
+  const item = scenarioSequence[currentScenarioIdx];
+  const pk = scenarioKey(item.situation, AGENT_PERSONAS[item.personaIndex]);
+  const r = scenarioResponses[pk] || {};
+  const allFilled = EVAL_ITEMS.every(function(item) { return r[item.key]; });
+  document.getElementById('scenario-next').disabled = !allFilled;
+}
+
+function goToNextTraining() {
+  const audio = document.getElementById('trainingAudio'); if (audio) audio.pause();
+  if (currentScenarioIdx < scenarioSequence.length - 1) {
+    currentScenarioIdx++;
+    showCurrentScenario();
+  } else {
+    finishStudy();
+  }
+}
+function goToPreviousTraining() {
+  const audio = document.getElementById('trainingAudio'); if (audio) audio.pause();
+  if (currentScenarioIdx === 0) {
+    goToStep('d2');
+  } else {
+    currentScenarioIdx--;
+    showCurrentScenario();
+  }
+}
+
+// 공용 음성 재생 (음성 샘플 등) — training 페이지는 별도 <audio>로 처리
+function playMessage(audioUrl, btnEl) {
+  if (!audioUrl) return;
+  if (currentAudio && currentAudio._btn === btnEl && !currentAudio.paused) {
+    currentAudio.pause();
+    btnEl.querySelector('i').className = 'ti ti-player-play';
+    return;
+  }
+  if (currentAudio) {
+    currentAudio.pause();
+    if (currentAudio._btn) currentAudio._btn.querySelector('i').className = 'ti ti-player-play';
+  }
+  currentAudio = new Audio(audioUrl);
+  currentAudio._btn = btnEl;
+  currentAudio.play();
+  btnEl.querySelector('i').className = 'ti ti-player-pause';
+  currentAudio.onended = function() {
+    btnEl.querySelector('i').className = 'ti ti-player-play';
+    currentAudio = null;
+  };
+}
+
+// (호환용) 시작 시 호출됨 — 현재 외부 CSV 미사용
+async function loadMessagesCSV() {}
+
+// 응답 평탄화 — 2 situations × 12 agents × 7 항목 + 표시 순서
+function flattenScenarioData() {
+  const flat = {};
+  flat.situationOrder = situationOrder.join(',');
+  flat.scenarioOrder = scenarioSequence.map(function(item) {
+    return item.situation + ':' + agentKey(AGENT_PERSONAS[item.personaIndex]);
+  }).join(',');
+  flat.trainingOrder = situationPersonaOrders.training.map(function(i) { return agentKey(AGENT_PERSONAS[i]); }).join(',');
+  flat.warningOrder = situationPersonaOrders.warning.map(function(i) { return agentKey(AGENT_PERSONAS[i]); }).join(',');
+
+  SITUATION_KEYS.forEach(function(situation) {
+    AGENT_PERSONAS.forEach(function(p) {
+      const ak = agentKey(p);
+      const sk = scenarioKey(situation, p);
+      const r = scenarioResponses[sk] || {};
+      EVAL_ITEMS.forEach(function(item) {
+        flat[situation + '_' + ak + '_' + item.key] = r[item.key] || '';
+      });
+    });
+  });
+  return flat;
+}
+
+// 페이지 로드 시작
+populateCountryDropdown();
+loadMessagesCSV();
+if (DEV_MODE) {
+  // 개발용 — 모든 Next 버튼 등 disabled 상태를 해제해서 자유롭게 페이지 이동 가능하게 함
+  document.querySelectorAll('button[disabled]').forEach(function(b) { b.disabled = false; });
+}
+goToStep(0);
+</script>
+</body>
+</html>

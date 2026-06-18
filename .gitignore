@@ -1,0 +1,7 @@
+# Editor / agent config — 배포에 불필요
+.claude/
+.vscode/
+
+# OS cruft
+.DS_Store
+Thumbs.db
