@@ -1,0 +1,4 @@
+# Netlify 배포 설정 — 빌드 과정 없는 순수 정적 사이트
+# 저장소 루트를 그대로 게시한다 (index.html → persona-builder.html).
+[build]
+  publish = "."
