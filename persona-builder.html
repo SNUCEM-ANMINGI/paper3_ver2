@@ -404,8 +404,12 @@ body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "S
 .consent-decl li { margin: 6px 0; font-size: 14px; color: var(--text-secondary); }
 .consent-item .form-label { font-weight: 400; }
 .consent-final .form-label { font-weight: 600; }
-.consent-radio { display: flex; gap: 12px; margin-top: 8px; }
-.consent-radio .radio-item { flex: 0 0 auto; min-width: 120px; text-align: center; }
+/* Agree / Disagree — 동그라미 없이 텍스트 가운데 정렬한 세그먼트 버튼 */
+.consent-radio { display: flex; gap: 12px; margin-top: 10px; border: none; background: transparent; border-radius: 0; overflow: visible; }
+.consent-radio .radio-item { flex: 1; justify-content: center; gap: 0; text-align: center; padding: 14px 16px; font-weight: 500; border: 1.5px solid var(--border); border-radius: 10px; box-shadow: none; }
+.consent-radio .radio-item::before { display: none; }              /* 왼쪽 동그라미 제거 */
+.consent-radio .radio-item:hover { background: var(--bg-soft); border-color: var(--border-strong); }
+.consent-radio .radio-item.selected { box-shadow: none; border-color: var(--border-active); background: var(--bg-info); color: var(--text-info); font-weight: 600; }
 .consent-warning { color: #c0392b; font-weight: 700; margin: 4px 0 14px; }
 
 </style>
