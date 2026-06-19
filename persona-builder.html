@@ -399,7 +399,18 @@ body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "S
 .consent-box p { margin: 6px 0; }
 .consent-box ol, .consent-box ul { margin: 6px 0; padding-left: 22px; }
 .consent-box li { margin: 4px 0; }
-.consent-section-title { font-size: 16px; font-weight: 600; color: var(--text-primary); margin: 6px 0 10px; }
+.consent-section-title {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 18px; font-weight: 700; color: var(--text-info);
+  background: var(--bg-info);
+  border: 1px solid rgba(24,95,165,0.22);
+  border-left: 5px solid var(--border-active);
+  border-radius: 10px;
+  padding: 15px 18px;
+  margin: 30px 0 14px;
+}
+.consent-section-title i { font-size: 22px; line-height: 1; }
+.consent-section-sub { font-size: 13px; color: var(--text-secondary); margin: -4px 0 18px; padding-left: 2px; }
 .consent-decl { margin: 4px 0 16px; }
 .consent-decl-item { font-weight: 400; margin-bottom: 8px; }
 .consent-decl-item:last-child { margin-bottom: 0; }
@@ -500,7 +511,8 @@ body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "S
       <p>Seoul National University Institutional Review Board (SNUIRB)<br>Phone: 02-880-5153&nbsp;&nbsp;&nbsp;E-mail: irb@snu.ac.kr</p>
     </div>
 
-    <div class="consent-section-title">Consent Form</div>
+    <div class="consent-section-title"><i class="ti ti-writing-sign" aria-hidden="true"></i>Consent Form</div>
+    <p class="consent-section-sub">Having read the Participant Information Sheet above, please indicate your agreement to the items below.</p>
     <p class="doc-meta" style="margin-bottom:2px;"><strong>Title of the research:</strong> Designing AI Communication Strategies Based on Situational Context and Worker Characteristics</p>
     <p class="doc-meta" style="margin-bottom:14px;"><strong>Principal Investigator:</strong> Changbum Ahn (Professor, Department of Architecture and Architectural Engineering, College of Engineering, Seoul National University)</p>
 
