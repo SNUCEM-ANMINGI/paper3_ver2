@@ -389,6 +389,24 @@ body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "S
   }
 }
 
+/* =====================================================
+   ◆ IRB 동의 화면
+   ===================================================== */
+.consent-box { max-height: 46vh; overflow-y: auto; border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; background: var(--bg-card); font-size: 13.5px; line-height: 1.65; color: var(--text-secondary); margin-bottom: 22px; }
+.consent-box .doc-title { font-size: 15px; font-weight: 600; color: var(--text-primary); margin: 0 0 4px; }
+.consent-box .doc-meta { font-size: 12.5px; margin: 2px 0; }
+.consent-box h3 { font-size: 14.5px; color: var(--text-primary); margin: 18px 0 6px; }
+.consent-box p { margin: 6px 0; }
+.consent-box ol, .consent-box ul { margin: 6px 0; padding-left: 22px; }
+.consent-box li { margin: 4px 0; }
+.consent-section-title { font-size: 16px; font-weight: 600; color: var(--text-primary); margin: 6px 0 10px; }
+.consent-decl { margin: 4px 0 16px; padding-left: 20px; }
+.consent-decl li { margin: 6px 0; font-size: 14px; color: var(--text-secondary); }
+.consent-item .form-label { font-weight: 400; }
+.consent-final .form-label { font-weight: 600; }
+.consent-radio { display: flex; gap: 12px; margin-top: 8px; }
+.consent-radio .radio-item { flex: 0 0 auto; min-width: 120px; text-align: center; }
+
 </style>
 </head>
 <body>
@@ -410,9 +428,126 @@ body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "S
   </div>
 
   <!-- =====================================================
+       IRB 동의 화면 — 가장 먼저 표시 (데이터 수집 전)
+       7번·8번·최종 셋 다 Agree여야 진행, 하나라도 Disagree면 종료
+       ===================================================== -->
+  <div id="screen-consent" class="screen">
+    <div class="section-divider">Before you begin</div>
+    <h2 class="question">Research Participation — Information &amp; Consent</h2>
+    <p class="question-sub">Please read the Participant Information Sheet below carefully, then complete the Consent Form. You must agree to all items to take part in this study.</p>
+
+    <div class="consent-box">
+      <p class="doc-title">Participant Information Sheet (All Participants)</p>
+      <p class="doc-meta"><strong>Title of the research:</strong> Designing AI Communication Strategies Based on Situational Context and Worker Characteristics</p>
+      <p class="doc-meta"><strong>Principal Investigator:</strong> Changbum Ahn (Professor, Department of Architecture and Architectural Engineering, College of Engineering, Seoul National University)</p>
+
+      <p>This research investigates how AI-generated safety warning messages should be designed for construction sites to ensure workers pay more attention to them and take safer actions. You are being asked to participate in the research because you are 18 years of age or older, have previous or current work experience on a construction site, and can understand and respond to a survey in English. A researcher at Seoul National University Changbum Ahn (Professor, Department of Architecture and Architectural Engineering, College of Engineering) and Mingi An (Ph.D. Candidate, Department of Architecture and Architectural Engineering, College of Engineering) will explain the research to you. The research will be conducted only with the voluntary consent of the participants, so before your decision is made it is important to understand the content and purpose of the research. Please read the content below carefully and thoroughly, and please let us know if you consent to be involved. If necessary, ask your family members or friends. If you have any question, the investigator will explain in detail.</p>
+
+      <h3>1. Why is this research being conducted?</h3>
+      <p>The purpose of this research is to identify how the design of AI-generated safety warning messages on construction sites affects workers' actual behavioral responses, and to propose design principles for AI safety communication that can operate adaptively according to situational context and worker characteristics.</p>
+
+      <h3>2. How many people will participate in the research?</h3>
+      <p>A total of 220 adults aged 18 or older, who have previous or current work experience on a construction site and can understand and respond to an English-language survey, will participate in this research.</p>
+
+      <h3>3. How will the research proceed?</h3>
+      <p>If you agree to participate, the research will proceed as follows.</p>
+      <ol>
+        <li>You will first complete a pre-survey. The pre-survey collects basic demographic information and information related to AI. Specifically, the demographic information includes your name, age, gender, country of residence, and highest level of education. The AI-related information includes your construction site work experience, whether you have ever used AI-based safety systems, and your level of trust in AI safety systems. You will be asked to enter or select the answers that apply to you.</li>
+        <li>You will then see a photograph of a construction site. The image depicts a potentially hazardous situation that can occur on a construction site, accompanied by a written description of the situation. After viewing the image and reading the description, an AI-generated safety warning will be played as an audio message.</li>
+        <li>After experiencing the construction site image, the description, and the corresponding AI-generated safety warning message, you will complete a short survey about what you experienced.</li>
+        <li>First, you will respond to 3 questions that check your perception of the situation depicted in the image and the characteristics of the AI-generated safety warning message.</li>
+        <li>Next, you will respond to 4 questions about the effectiveness of the AI-generated safety warning message.</li>
+        <li>You will then see a new construction site photograph, different from the first one. This image also depicts a potentially hazardous situation that can occur on a construction site, accompanied by a written description. After viewing the image and reading the description, a corresponding AI-generated safety warning will be played as an audio message.</li>
+        <li>The same procedure described in steps 3), 4), and 5) will be repeated for this second scenario.</li>
+        <li>The entire survey is completed online through the provided link on your PC or mobile device. No offline, face-to-face contact or laboratory visit is required.</li>
+      </ol>
+
+      <h3>4. What is the duration of participation in the research?</h3>
+      <p>It will take approximately 5~7 minutes.</p>
+
+      <h3>5. Once participation in the research has begun, is it possible to stop participating?</h3>
+      <p>Yes. You can stop participating in the research whenever you want with no disadvantage. Any time you want to stop, please tell the investigator immediately. If you withdraw, the data collected up to that point will be discarded immediately. Because this survey is conducted online, if you close the browser window, the entered content will not be collected.</p>
+
+      <h3>6. Are there any side effects or risks involved in participation in this research?</h3>
+      <p>This research is conducted as an online survey and does not involve any physical intervention; it is classified as minimal-risk research. The risks associated with participation are limited to the psychological burden typically associated with routine survey participation.</p>
+      <p>You may experience minor psychological discomfort during the survey. This can arise from viewing images of hazardous construction site situations (e.g., heavy equipment approach, missing personal protective equipment), which may cause a temporary sense of tension or discomfort for some participants. To minimize this, the images used depict only the possibility of a hazardous situation, not actual accident scenes, and the intensity of the scenarios has been moderated to avoid causing excessive fear or shock.</p>
+      <p>If you feel any psychological discomfort during the survey, you may stop participating at any time. If you have any questions about possible side effects or risks during the research, please contact the investigator immediately.</p>
+
+      <h3>7. Are there any advantages to participating in the research?</h3>
+      <p>You will not receive any direct advantage. However, the information you provide will be helpful to promoting understanding of AI communication on construction sites.</p>
+
+      <h3>8. Are there any disadvantages to participating in the research?</h3>
+      <p>You are free to agree or decline to participate in the research. There will be no disadvantage if you decide not to participate.</p>
+
+      <h3>9. Is the information gathered during the participation secure?</h3>
+      <p>The person in charge of managing the personal information collected for this research is Professor Changbum Ahn (Department of Architecture and Architectural Engineering, College of Engineering; Tel. 02-880-7064) at Seoul National University. The personal information collected in this study consists of your name, gender, age, country of residence, highest level of education, and construction industry experience. Among these, your name is collected as identifying information for the purpose of preventing duplicate participation and managing responses, and is also used to generate personalized messages during the survey; at the stage of data analysis, your name will be anonymized or excluded from the analysis so that you cannot be identified. Your gender, age, country of residence, highest level of education, and construction industry experience are collected as demographic information and will be used when analyzing the survey results. Such personal information is only allowed to be accessed by Changbum Ahn (Professor, Department of Architecture and Architectural Engineering, College of Engineering, Seoul National University) and Mingi An (Ph.D. Candidate, Department of Architecture and Architectural Engineering, College of Engineering, Seoul National University), and will be stored on an encrypted shared database within the principal investigator's laboratory (Construction Engineering &amp; Management Laboratory, Seoul National University).</p>
+      <p>Documentation for the waiver of written informed consent will be retained for three years and then destroyed in accordance with Article 15, Paragraph 2 of the Enforcement Rule of the Bioethics and Safety Act. Research data excluding personally identifiable information will be mandatorily retained for five years in accordance with Article 16, Paragraph 3 of the Seoul National University Research Ethics Guidelines, and thereafter will continue to be stored for as long as the principal investigator is able to manage them to ensure research integrity.</p>
+      <p>All possible measures will be taken to secure and protect all personal information gathered while proceeding with this research. Research data excluding personally identifiable information may be used for research purposes other than this study, including academic conference presentations and journal publications by the principal investigator and other researchers. When the research is reported in an academic journal or presented at a conference, your name and other personal information will not be presented. However, if required by law, your personal information may be provided. In addition, the Seoul National University Institutional Review Board may directly access the research results within the scope of the relevant regulations to inspect whether the research has been conducted without the participant's personal information security and verify the reliability of the research data. By checking the agreement box, you acknowledge that you have been informed of all necessary information related to the research in advance and will be deemed to have consented to it.</p>
+
+      <h3>10. How much will participants be paid for participation?</h3>
+      <p>You will receive USD 1 (approximately KRW 1,500) as a token of appreciation for your participation. However, participants who withdraw partway through the study will not receive compensation.</p>
+
+      <h3>11. If I have any questions about the research, whom can I contact?</h3>
+      <p>If you have any questions related to the research, or if there are any problems or concerns related to the research, please contact the investigator below.</p>
+      <p>Name: Mingi AN&nbsp;&nbsp;&nbsp;Contact: +82) 10-9916-8974</p>
+      <p>If you have any questions related to your rights as a research participant, please contact Seoul National University Institutional Review Board as shown below.</p>
+      <p>Seoul National University Institutional Review Board (SNUIRB)<br>Phone: 02-880-5153&nbsp;&nbsp;&nbsp;E-mail: irb@snu.ac.kr</p>
+    </div>
+
+    <div class="consent-section-title">Consent Form</div>
+    <p class="doc-meta" style="margin-bottom:2px;"><strong>Title of the research:</strong> Designing AI Communication Strategies Based on Situational Context and Worker Characteristics</p>
+    <p class="doc-meta" style="margin-bottom:14px;"><strong>Principal Investigator:</strong> Changbum Ahn (Professor, Department of Architecture and Architectural Engineering, College of Engineering, Seoul National University)</p>
+
+    <ol class="consent-decl">
+      <li>I have read the instructions above thoroughly and discussed them with the investigator.</li>
+      <li>I have been made aware of the potential risks and benefits of participating in the research, and I have received satisfactory answers to all my queries.</li>
+      <li>I voluntarily agree to participate in the research.</li>
+      <li>I agree to collection and processing of any personal information gathered during the research within the bounds of the existing legislation and regulations of the Institutional Review Board.</li>
+      <li>I agree that my personal information, which will be otherwise kept secured by the investigator(s), is accessed by government institutions prescribed by laws and regulations and the SNU Institutional Review Board for auditing purposes.</li>
+      <li>I understand that I can withdraw the participation in the research whenever I want without any risk to me.</li>
+    </ol>
+
+    <div class="form-group consent-item">
+      <label class="form-label">7. I know that my name is being collected, and I allow it to be used for research.</label>
+      <div class="radio-group consent-radio">
+        <div class="radio-item" data-field="consentName" data-value="agree" onclick="selectConsent(this)">Agree</div>
+        <div class="radio-item" data-field="consentName" data-value="disagree" onclick="selectConsent(this)">Disagree</div>
+      </div>
+    </div>
+
+    <div class="form-group consent-item">
+      <label class="form-label">8. I agree that the research data collected in this study, excluding personally identifiable information, may be used for future research-related purposes, including academic conference presentations and journal publications.</label>
+      <div class="radio-group consent-radio">
+        <div class="radio-item" data-field="consentFutureUse" data-value="agree" onclick="selectConsent(this)">Agree</div>
+        <div class="radio-item" data-field="consentFutureUse" data-value="disagree" onclick="selectConsent(this)">Disagree</div>
+      </div>
+    </div>
+
+    <div class="form-group consent-item consent-final">
+      <label class="form-label">Do you consent to participate in this study?</label>
+      <div class="radio-group consent-radio">
+        <div class="radio-item" data-field="consentParticipate" data-value="agree" onclick="selectConsent(this)">Agree</div>
+        <div class="radio-item" data-field="consentParticipate" data-value="disagree" onclick="selectConsent(this)">Disagree</div>
+      </div>
+    </div>
+
+    <div class="nav-controls">
+      <button class="btn btn-primary" id="consent-continue" disabled onclick="submitConsent()">Continue →</button>
+    </div>
+  </div>
+
+  <!-- 동의 거절 시 종료 화면 — 데이터 전송 없음 -->
+  <div id="screen-consent-declined" class="screen hidden">
+    <div class="intro-card">
+      <h1 class="intro-title">Thank you</h1>
+      <p class="intro-desc">You have chosen not to consent to participation. The survey will not continue, and none of your responses have been collected.<br><br>You may now close this window.</p>
+    </div>
+  </div>
+
+  <!-- =====================================================
        시작 화면 (Intro)
        ===================================================== -->
-  <div id="screen-intro" class="screen">
+  <div id="screen-intro" class="screen hidden">
     <div class="intro-card">
       <h1 class="intro-title">Welcome</h1>
       <p class="intro-desc" style="text-align: left;">Thank you for taking part in this study.<br><br>
@@ -664,6 +799,14 @@ const participantInfo = {
   sessionId:   _params.get('SESSION_ID')   || ''
 };
 
+// IRB 동의 — 7번(이름)/8번(향후활용)/최종 셋 다 'agree'여야 진행. payload에 포함되어 시트에 저장됨.
+const consent = {
+  consentName:        '',  // 7번: 이름 수집·사용
+  consentFutureUse:   '',  // 8번: 향후 연구·논문·학회 활용
+  consentParticipate: '',  // 최종: 연구 참여
+  consentTimestamp:   ''   // 동의(Continue) 클릭 시각 (ISO)
+};
+
 /* =====================================================
    ◆ 데이터 저장 — Demographics + 6개 디자인 선택
    ===================================================== */
@@ -909,6 +1052,35 @@ let completionCode = '';
 /* =====================================================
    ◆ 화면 전환
    ===================================================== */
+/* =====================================================
+   ◆ IRB 동의 화면 — 선택/검증/진행
+   ===================================================== */
+function selectConsent(el) {
+  const field = el.dataset.field;
+  el.parentNode.querySelectorAll('.radio-item').forEach(function(s) { s.classList.remove('selected'); });
+  el.classList.add('selected');
+  consent[field] = el.dataset.value;
+  updateConsentNav();
+}
+
+function updateConsentNav() {
+  // 세 항목 모두 응답해야 Continue 활성화 (Agree/Disagree 무관 — 분기는 submitConsent에서)
+  const answered = consent.consentName && consent.consentFutureUse && consent.consentParticipate;
+  const btn = document.getElementById('consent-continue');
+  if (btn) btn.disabled = !answered;
+}
+
+function submitConsent() {
+  const vals = [consent.consentName, consent.consentFutureUse, consent.consentParticipate];
+  // 하나라도 Disagree → 종료 화면 (데이터 전송 없음)
+  if (vals.indexOf('disagree') !== -1) { goToStep('consent-declined'); return; }
+  // 미응답 항목이 있으면 진행하지 않음 (DEV_MODE에서 버튼이 켜져 있어도 안전)
+  if (vals.indexOf('') !== -1) { return; }
+  // 셋 다 Agree → 동의 시각 기록 후 본 설문으로
+  consent.consentTimestamp = new Date().toISOString();
+  goToStep(0);
+}
+
 function goToStep(n) {
   document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
   let target;
@@ -1112,9 +1284,10 @@ async function finishStudy() {
 
   const payload = {
     timestamp: new Date().toISOString(),
+    ...consent,           // IRB 동의 (consentName / consentFutureUse / consentParticipate / consentTimestamp)
     ...participantInfo,   // prolificPid, studyId, sessionId
     ...demographics,      // Q1-13
-    ...flattenScenarioData()  // 2 situations × 12 agents × 7 평가항목 + 표시 순서
+    ...flattenScenarioData()  // 2 situations × 12 agents × 6 평가항목 + 표시 순서
   };
 
   // Apps Script 웹훅이 설정되지 않은 경우 — 테스트 환경에서는 alert로 데이터만 보여주고 thanks 페이지로
@@ -1549,7 +1722,7 @@ if (DEV_MODE) {
   // 개발용 — 모든 Next 버튼 등 disabled 상태를 해제해서 자유롭게 페이지 이동 가능하게 함
   document.querySelectorAll('button[disabled]').forEach(function(b) { b.disabled = false; });
 }
-goToStep(0);
+goToStep('consent');   // IRB 동의 화면부터 시작 (데이터 수집 전)
 </script>
 </body>
 </html>
