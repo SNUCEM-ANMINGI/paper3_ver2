@@ -1290,7 +1290,6 @@ const EVAL_ITEMS = [
   { key: 'preference',     label: 'I would like to work with this AI safety agent.' },
   { key: 'persuasiveness', label: 'I would find this AI safety agent persuasive.' },
   { key: 'trust',          label: 'I would trust this AI safety agent to help keep me safe on the construction site.' },
-  { key: 'credibility',    label: 'I would consider this AI safety agent to be credible.' },
   { key: 'comfort',        label: 'I would feel comfortable working with this AI safety agent.' },
   { key: 'attention',      label: 'I would pay close attention to the information provided by this AI safety agent.' }
 ];
@@ -1425,13 +1424,16 @@ function toggleTrainingAudio() {
 
 function buildEvalMatrixHTML(situation, persona) {
   const pk = scenarioKey(situation, persona);
+  // 외형이 '사람'인 조건에서는 평가 문장의 호칭을 'this AI safety agent' → 'this safety officer'로 치환.
+  // (humanoid / robotlike 조건은 'this AI safety agent' 유지)
+  const referent = persona.anthropomorphism === 'human' ? 'this safety officer' : 'this AI safety agent';
   const headers = ['Strongly<br>disagree', 'Disagree', 'Somewhat<br>disagree', 'Neither', 'Somewhat<br>agree', 'Agree', 'Strongly<br>agree'];
   let html = '<div class="message-card"><table class="matrix-table"><thead><tr><th class="matrix-question-header"></th>';
   for (const h of headers) html += '<th>' + h + '</th>';
   html += '</tr></thead><tbody>';
   for (const item of EVAL_ITEMS) {
     html += '<tr data-persona="' + pk + '" data-dim="' + item.key + '">';
-    html += '<td class="matrix-question">' + item.label + '</td>';
+    html += '<td class="matrix-question">' + item.label.replace('this AI safety agent', referent) + '</td>';
     for (let i = 1; i <= 7; i++) {
       html += '<td><div class="matrix-cell" data-value="' + i + '" onclick="selectEvalCell(this)"></div></td>';
     }
