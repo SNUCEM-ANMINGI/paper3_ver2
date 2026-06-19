@@ -406,6 +406,7 @@ body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "S
 .consent-final .form-label { font-weight: 600; }
 .consent-radio { display: flex; gap: 12px; margin-top: 8px; }
 .consent-radio .radio-item { flex: 0 0 auto; min-width: 120px; text-align: center; }
+.consent-warning { color: #c0392b; font-weight: 700; margin: 4px 0 14px; }
 
 </style>
 </head>
@@ -531,16 +532,10 @@ body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "S
       </div>
     </div>
 
+    <p id="consent-warning" class="consent-warning" style="display:none;">You have selected &quot;Disagree.&quot; You cannot participate in this study unless you agree to all of the items above. To take part, please change your response to &quot;Agree.&quot;</p>
+
     <div class="nav-controls">
       <button class="btn btn-primary" id="consent-continue" disabled onclick="submitConsent()">Continue →</button>
-    </div>
-  </div>
-
-  <!-- 동의 거절 시 종료 화면 — 데이터 전송 없음 -->
-  <div id="screen-consent-declined" class="screen hidden">
-    <div class="intro-card">
-      <h1 class="intro-title">Thank you</h1>
-      <p class="intro-desc">You have chosen not to consent to participation. The survey will not continue, and none of your responses have been collected.<br><br>You may now close this window.</p>
     </div>
   </div>
 
@@ -1064,19 +1059,25 @@ function selectConsent(el) {
 }
 
 function updateConsentNav() {
-  // 세 항목 모두 응답해야 Continue 활성화 (Agree/Disagree 무관 — 분기는 submitConsent에서)
-  const answered = consent.consentName && consent.consentFutureUse && consent.consentParticipate;
+  const vals = [consent.consentName, consent.consentFutureUse, consent.consentParticipate];
+  const anyDisagree = vals.indexOf('disagree') !== -1;
+  const allAgree = vals.every(function(v) { return v === 'agree'; });
+
+  // Disagree가 하나라도 있으면 빨간 굵은 경고 표시
+  const warn = document.getElementById('consent-warning');
+  if (warn) warn.style.display = anyDisagree ? '' : 'none';
+
+  // Continue는 세 항목 모두 'Agree'일 때만 활성화 (미응답·Disagree면 비활성)
   const btn = document.getElementById('consent-continue');
-  if (btn) btn.disabled = !answered;
+  if (btn) btn.disabled = !allAgree;
 }
 
 function submitConsent() {
-  const vals = [consent.consentName, consent.consentFutureUse, consent.consentParticipate];
-  // 하나라도 Disagree → 종료 화면 (데이터 전송 없음)
-  if (vals.indexOf('disagree') !== -1) { goToStep('consent-declined'); return; }
-  // 미응답 항목이 있으면 진행하지 않음 (DEV_MODE에서 버튼이 켜져 있어도 안전)
-  if (vals.indexOf('') !== -1) { return; }
-  // 셋 다 Agree → 동의 시각 기록 후 본 설문으로
+  // Continue는 세 항목 모두 Agree일 때만 활성화되므로, 여기 도달 = 전원 동의 완료
+  const allAgree = consent.consentName === 'agree'
+                && consent.consentFutureUse === 'agree'
+                && consent.consentParticipate === 'agree';
+  if (!allAgree) return;
   consent.consentTimestamp = new Date().toISOString();
   goToStep(0);
 }
@@ -1719,9 +1720,10 @@ function flattenScenarioData() {
 populateCountryDropdown();
 loadMessagesCSV();
 if (DEV_MODE) {
-  // 개발용 — 모든 Next 버튼 등 disabled 상태를 해제해서 자유롭게 페이지 이동 가능하게 함
-  document.querySelectorAll('button[disabled]').forEach(function(b) { b.disabled = false; });
+  // 개발용 — Next 버튼 등 disabled 해제 (단, 동의 Continue 버튼은 제외 — 동의 게이트는 항상 유효)
+  document.querySelectorAll('button[disabled]').forEach(function(b) { if (b.id !== 'consent-continue') b.disabled = false; });
 }
+updateConsentNav();    // 동의 Continue 초기 상태(비활성)·경고 표시 설정
 goToStep('consent');   // IRB 동의 화면부터 시작 (데이터 수집 전)
 </script>
 </body>
