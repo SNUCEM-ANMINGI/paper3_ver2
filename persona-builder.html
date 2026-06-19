@@ -400,10 +400,11 @@ body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "S
 .consent-box ol, .consent-box ul { margin: 6px 0; padding-left: 22px; }
 .consent-box li { margin: 4px 0; }
 .consent-section-title { font-size: 16px; font-weight: 600; color: var(--text-primary); margin: 6px 0 10px; }
-.consent-decl { margin: 4px 0 16px; padding-left: 20px; }
-.consent-decl li { margin: 6px 0; font-size: 14px; color: var(--text-secondary); }
+.consent-decl { margin: 4px 0 16px; }
+.consent-decl-item { font-weight: 400; margin-bottom: 8px; }
+.consent-decl-item:last-child { margin-bottom: 0; }
 .consent-item .form-label { font-weight: 400; }
-.consent-final .form-label { font-weight: 600; }
+.consent-final .form-label { font-weight: 600; text-align: center; }
 /* Agree / Disagree — 동그라미 없이 텍스트 가운데 정렬한 세그먼트 버튼 */
 .consent-radio { display: flex; gap: 12px; margin-top: 10px; border: none; background: transparent; border-radius: 0; overflow: visible; }
 .consent-radio .radio-item { flex: 1; justify-content: center; gap: 0; text-align: center; padding: 14px 16px; font-weight: 500; border: 1.5px solid var(--border); border-radius: 10px; box-shadow: none; }
@@ -503,14 +504,14 @@ body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "S
     <p class="doc-meta" style="margin-bottom:2px;"><strong>Title of the research:</strong> Designing AI Communication Strategies Based on Situational Context and Worker Characteristics</p>
     <p class="doc-meta" style="margin-bottom:14px;"><strong>Principal Investigator:</strong> Changbum Ahn (Professor, Department of Architecture and Architectural Engineering, College of Engineering, Seoul National University)</p>
 
-    <ol class="consent-decl">
-      <li>I have read the instructions above thoroughly and discussed them with the investigator.</li>
-      <li>I have been made aware of the potential risks and benefits of participating in the research, and I have received satisfactory answers to all my queries.</li>
-      <li>I voluntarily agree to participate in the research.</li>
-      <li>I agree to collection and processing of any personal information gathered during the research within the bounds of the existing legislation and regulations of the Institutional Review Board.</li>
-      <li>I agree that my personal information, which will be otherwise kept secured by the investigator(s), is accessed by government institutions prescribed by laws and regulations and the SNU Institutional Review Board for auditing purposes.</li>
-      <li>I understand that I can withdraw the participation in the research whenever I want without any risk to me.</li>
-    </ol>
+    <div class="consent-decl">
+      <p class="form-label consent-decl-item">1. I have read the instructions above thoroughly and discussed them with the investigator.</p>
+      <p class="form-label consent-decl-item">2. I have been made aware of the potential risks and benefits of participating in the research, and I have received satisfactory answers to all my queries.</p>
+      <p class="form-label consent-decl-item">3. I voluntarily agree to participate in the research.</p>
+      <p class="form-label consent-decl-item">4. I agree to collection and processing of any personal information gathered during the research within the bounds of the existing legislation and regulations of the Institutional Review Board.</p>
+      <p class="form-label consent-decl-item">5. I agree that my personal information, which will be otherwise kept secured by the investigator(s), is accessed by government institutions prescribed by laws and regulations and the SNU Institutional Review Board for auditing purposes.</p>
+      <p class="form-label consent-decl-item">6. I understand that I can withdraw the participation in the research whenever I want without any risk to me.</p>
+    </div>
 
     <div class="form-group consent-item">
       <label class="form-label">7. I know that my name is being collected, and I allow it to be used for research.</label>
