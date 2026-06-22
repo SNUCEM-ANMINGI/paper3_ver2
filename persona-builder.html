@@ -1362,12 +1362,14 @@ const SITUATIONS = {
   training: {
     label: 'Safety Training Briefing',
     imageFolder: 'Image/Training',
-    audioFolder: 'Audio/Training'
+    audioFolder: 'Audio/Training',
+    leadIn: 0          // 음성 시작 전 앞쪽 무음/배경음 길이(초) — 자막 동기화 보정용
   },
   warning: {
     label: 'Hazard Warning Message',
     imageFolder: 'Image/Warning',
-    audioFolder: 'Audio/Warning'
+    audioFolder: 'Audio/Warning',
+    leadIn: 1.0        // mp3 앞부분에 약 1초 배경음이 있어 자막을 그만큼 늦춰 시작
   }
 };
 const SITUATION_KEYS = ['training', 'warning'];
@@ -1403,7 +1405,7 @@ function scenarioAudio(situation, p) {
   }
 
   const w = p.warmth === 'high' ? 'High' : 'Low';
-  return SITUATIONS.warning.audioFolder + '/Warning_' + w + '_' + g + '.wav';
+  return SITUATIONS.warning.audioFolder + '/Warning_' + w + '_' + g + '.mp3';
 }
 
 /* ── 자막 (음성에 동기화) ──────────────────────────────
@@ -1455,16 +1457,20 @@ function scenarioSubtitles(situation, p) {
   return [];
 }
 
-// 음성 길이를 받아 각 줄의 글자 수에 비례해 [start, end) 구간을 계산
-function buildCuesFromDuration(lines, duration) {
+// 음성 길이를 받아 각 줄의 글자 수에 비례해 [start, end) 구간을 계산.
+// leadIn: 음성 시작 전 앞쪽 무음/배경음 길이(초). 자막을 [leadIn, duration] 구간에 분배해
+//         실제 음성이 늦게 시작하는 파일과도 동기화되도록 한다.
+function buildCuesFromDuration(lines, duration, leadIn) {
   if (!isFinite(duration) || duration <= 0 || !lines.length) return [];
+  const offset = (isFinite(leadIn) && leadIn > 0) ? Math.min(leadIn, duration) : 0;
+  const speech = duration - offset;
   const totalChars = lines.reduce(function(s, l) { return s + l.length; }, 0) || 1;
   const cues = [];
   let acc = 0;
   for (const line of lines) {
-    const start = (acc / totalChars) * duration;
+    const start = offset + (acc / totalChars) * speech;
     acc += line.length;
-    const end = (acc / totalChars) * duration;
+    const end = offset + (acc / totalChars) * speech;
     cues.push({ start: start, end: end, text: line });
   }
   return cues;
@@ -1566,14 +1572,17 @@ function setupScenarioAudio(situation, persona) {
   subBox.textContent = "Press play to hear the agent's safety message.";
   subBox.classList.add('empty');
 
+  // 음성 시작 전 앞쪽 무음/배경음 길이(초) — 자막을 그만큼 늦춰 동기화
+  const leadIn = (SITUATIONS[situation] && SITUATIONS[situation].leadIn) || 0;
+
   // 음성 길이를 알게 되면 글자 수 비례로 자막 구간을 계산 (메타데이터 로드 후)
-  let cues = buildCuesFromDuration(lines, audio.duration);
-  audio.onloadedmetadata = function() { cues = buildCuesFromDuration(lines, audio.duration); };
+  let cues = buildCuesFromDuration(lines, audio.duration, leadIn);
+  audio.onloadedmetadata = function() { cues = buildCuesFromDuration(lines, audio.duration, leadIn); };
 
   // 재생 위치에 맞는 자막 한 줄 표시
   audio.ontimeupdate = function() {
     if (!lines.length) return;
-    if (!cues.length) cues = buildCuesFromDuration(lines, audio.duration);
+    if (!cues.length) cues = buildCuesFromDuration(lines, audio.duration, leadIn);
     const t = audio.currentTime;
     for (let i = 0; i < cues.length; i++) {
       if (t >= cues[i].start && t < cues[i].end) {
