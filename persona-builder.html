@@ -399,6 +399,9 @@ body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "S
 .consent-box p { margin: 6px 0; }
 .consent-box ol, .consent-box ul { margin: 6px 0; padding-left: 22px; }
 .consent-box li { margin: 4px 0; }
+/* 동의서용 박스 — 설명문 박스와 동일한 외형이지만 높이 제한/스크롤 없이 전체를 보여준다 */
+.consent-form-box { border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px 20px; background: var(--bg-card); margin-bottom: 22px; }
+.consent-form-box .doc-meta { font-size: 14px; color: var(--text-primary); margin: 2px 0; }
 .consent-section-title {
   display: flex; align-items: center; gap: 10px;
   font-size: 18px; font-weight: 700; color: var(--text-primary);
@@ -413,7 +416,7 @@ body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "S
 .consent-final .form-label { font-weight: 600; text-align: center; }
 /* Agree / Disagree — 동그라미 없이 텍스트 가운데 정렬한 세그먼트 버튼 */
 .consent-radio { display: flex; gap: 12px; margin-top: 10px; border: none; background: transparent; border-radius: 0; overflow: visible; }
-.consent-radio .radio-item { flex: 1; justify-content: center; gap: 0; text-align: center; padding: 14px 16px; font-weight: 500; border: 1.5px solid var(--border); border-radius: 10px; box-shadow: none; }
+.consent-radio .radio-item { flex: 1; justify-content: center; gap: 0; text-align: center; padding: 9px 16px; font-weight: 500; border: 1.5px solid var(--border); border-radius: 10px; box-shadow: none; }
 .consent-radio .radio-item::before { display: none; }              /* 왼쪽 동그라미 제거 */
 .consent-radio .radio-item:hover { background: var(--bg-soft); border-color: var(--border-strong); }
 .consent-radio .radio-item.selected { box-shadow: none; border-color: var(--border-active); background: var(--bg-info); color: var(--text-info); font-weight: 600; }
@@ -446,10 +449,12 @@ body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "S
   <div id="screen-consent" class="screen">
     <div class="section-divider">Before you begin</div>
     <h2 class="question">Research Participation — Information &amp; Consent</h2>
-    <p class="question-sub">Please read the Participant Information Sheet below carefully, then complete the Consent Form. You must agree to all items to take part in this study.</p>
+    <p class="question-sub">This page has two parts: the <strong>Participant Information Sheet</strong> (read first) and the <strong>Consent Form</strong> (complete after reading). You must agree to all items to take part in this study.</p>
+
+    <div class="consent-section-title"><i class="ti ti-file-text" aria-hidden="true"></i>Participant Information Sheet</div>
+    <p class="consent-section-sub">Please read the following information carefully (scroll inside the box). When you are done, complete the Consent Form below.</p>
 
     <div class="consent-box">
-      <p class="doc-title">Participant Information Sheet (All Participants)</p>
       <p class="doc-meta"><strong>Title of the research:</strong> Designing AI Communication Strategies Based on Situational Context and Worker Characteristics</p>
       <p class="doc-meta"><strong>Principal Investigator:</strong> Changbum Ahn (Professor, Department of Architecture and Architectural Engineering, College of Engineering, Seoul National University)</p>
 
@@ -508,6 +513,8 @@ body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "S
 
     <div class="consent-section-title"><i class="ti ti-writing-sign" aria-hidden="true"></i>Consent Form</div>
     <p class="consent-section-sub">Having read the Participant Information Sheet above, please indicate your agreement to the items below.</p>
+
+    <div class="consent-form-box">
     <p class="doc-meta" style="margin-bottom:2px;"><strong>Title of the research:</strong> Designing AI Communication Strategies Based on Situational Context and Worker Characteristics</p>
     <p class="doc-meta" style="margin-bottom:14px;"><strong>Principal Investigator:</strong> Changbum Ahn (Professor, Department of Architecture and Architectural Engineering, College of Engineering, Seoul National University)</p>
 
@@ -545,6 +552,7 @@ body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "S
     </div>
 
     <p id="consent-warning" class="consent-warning" style="display:none;">You have selected &quot;Disagree.&quot; You cannot participate in this study unless you agree to all of the items above. To take part, please change your response to &quot;Agree.&quot;</p>
+    </div>
 
     <div class="nav-controls">
       <button class="btn btn-primary" id="consent-continue" disabled onclick="submitConsent()">Continue →</button>
