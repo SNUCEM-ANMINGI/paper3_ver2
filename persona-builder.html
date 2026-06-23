@@ -575,12 +575,10 @@ body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "S
     <div class="intro-card">
       <h1 class="intro-title">Welcome</h1>
       <p class="intro-desc" style="text-align: left;">Thank you for taking part in this study.<br><br>
-The survey has three parts:<br>
-(1) A few questions about your background,<br>
-(2) Questions about your safety perceptions and experience with AI,<br>
-(3) Rating AI safety agents across construction-site situations.<br><br>
-It should take about <strong>15-18 minutes</strong> to complete.</p>
-      <p class="intro-desc" style="text-align: left; background: #fef3e6; border-left: 3px solid var(--text-warm); padding: 12px 16px; border-radius: 6px;"><strong>Eligibility:</strong> This study is for adults aged 18 or older who currently work, or have previously worked, on construction sites. If this does not describe you, please do not continue.</p>
+You'll first answer a few questions about your background and your experience with safety and AI on construction sites. You'll then be shown a series of construction-site situations, where different AI safety agents deliver spoken safety messages. After each message, you'll answer a few short questions about how it came across and how it affected you.<br><br>
+The study takes about <strong>15–18 minutes</strong> to complete.<br><br>
+You'll need audio (speakers or headphones) to listen to the spoken safety messages.</p>
+      <p class="intro-desc" style="text-align: left; background: #fef3e6; border-left: 3px solid var(--text-warm); padding: 12px 16px; border-radius: 6px;"><strong>Eligibility:</strong> This study is for adults aged 18 or older who currently work, or have previously worked, on construction sites, and who are comfortable reading and listening to English. If this does not describe you, please do not continue.</p>
       <button class="btn btn-primary" onclick="goToStep('d1')">Begin →</button>
     </div>
   </div>
@@ -797,7 +795,9 @@ It should take about <strong>15-18 minutes</strong> to complete.</p>
   <div id="screen-thanks" class="screen hidden">
     <div class="intro-card">
       <h1 class="intro-title">Thank you!</h1>
-      <p class="intro-desc">Your responses have been recorded successfully.<br>We greatly appreciate your participation in this study.</p>
+      <p class="intro-desc">Your responses have been recorded successfully.<br>
+You're being returned to Prolific to complete your submission…<br><br>
+If you are not redirected automatically within a few seconds, please <a href="https://app.prolific.com/submissions/complete?cc=CBH4V4EM">click here</a> to confirm your completion.</p>
     </div>
   </div>
 
@@ -810,8 +810,11 @@ It should take about <strong>15-18 minutes</strong> to complete.</p>
 // Google Apps Script 웹 앱 URL (배포 후 발급받은 https://script.google.com/.../exec)
 const SHEET_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzPXeCb3x8x-N_yXTDSf3kIIS1OAyRadVkGOSI9am0W_nPk_Q7mw5xfw52nCIN1mRaM/exec';
 
+// Prolific 제출 완료 URL — 응답 저장 성공 후 참여자를 이 주소로 리다이렉트(=Prolific에 "완료" 기록)
+const PROLIFIC_COMPLETION_URL = 'https://app.prolific.com/submissions/complete?cc=CBH4V4EM';
+
 // 개발용 — true일 때 입력 검증/30초 휴식 모두 스킵. 실제 배포 시 false로 변경.
-const DEV_MODE = true;
+const DEV_MODE = false;
 
 /* =====================================================
    ◆ Prolific 등 외부에서 전달된 URL 파라미터 캡쳐
@@ -1340,8 +1343,9 @@ async function finishStudy() {
     try { console.log('[submit] server response:', await res.text()); }
     catch (e) { console.log('[submit] 응답 본문을 읽지 못함 (CORS):', e); }
 
-    // 응답을 스프레드시트에 저장한 뒤 "Thank you" 화면 표시 (외부 리다이렉트 없음)
+    // 응답을 스프레드시트에 저장한 뒤 "Thank you" 화면 표시 → Prolific 완료 페이지로 리다이렉트
     goToStep('thanks');
+    setTimeout(function () { window.location.href = PROLIFIC_COMPLETION_URL; }, 2500);
   } catch (err) {
     if (btn) { btn.disabled = false; btn.textContent = originalText; }
     alert('Could not save your responses. Please check your connection and try again.\n\n(' + err.message + ')');
