@@ -234,17 +234,75 @@ body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "S
 .training-image { width: 100%; border-radius: 12px; overflow: hidden; margin-bottom: 16px; }
 .training-image img { width: 100%; display: block; }
 .training-image span { display: block; padding: 40px; text-align: center; color: var(--text-tertiary); font-size: 13px; background: var(--bg-soft); border-radius: 12px; }
-.situation-label {
+.situation-desc {
+  position: relative;
+  overflow: hidden;
+  margin: 0 0 20px;
+  padding: 18px 22px;
+  background: linear-gradient(180deg, #f4f9fd 0%, #ffffff 70%);
+  border: 1px solid rgba(24,95,165,0.16);
+  border-radius: 14px;
+  box-shadow: 0 1px 2px rgba(16,40,70,0.04), 0 6px 20px rgba(16,40,70,0.05);
+}
+.situation-desc::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 4px;
+  background: linear-gradient(180deg, var(--text-info), #4a91d4);
+}
+.situation-desc:empty { display: none; }
+.situation-desc-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text-info);
+}
+.situation-desc-title i {
   display: inline-flex;
   align-items: center;
-  margin: 2px 0 14px;
-  padding: 6px 10px;
-  border-radius: 999px;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
   background: var(--bg-info);
   color: var(--text-info);
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 17px;
 }
+.situation-desc-body {
+  margin: 0;
+  color: #3a4655;
+  font-size: 15px;
+  line-height: 1.7;
+}
+/* 평가 잠금 — 음성 80% 청취 전까지 매트릭스를 비활성화 */
+.eval-lock-notice {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 14px;
+  padding: 12px 16px;
+  background: var(--bg-soft);
+  border: 1px dashed var(--border-strong);
+  border-radius: 10px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.5;
+}
+.eval-lock-notice i { font-size: 18px; color: var(--text-info); flex-shrink: 0; }
+.eval-section #trainingMatrix { transition: opacity 0.25s, filter 0.25s; }
+.eval-section.locked #trainingMatrix {
+  opacity: 0.45;
+  filter: grayscale(0.6);
+  pointer-events: none;
+  user-select: none;
+}
+.eval-section:not(.locked) .eval-lock-notice { display: none; }
 
 /* 진행 바 — 24단계 중 현재 위치를 직관적으로 표시 */
 .train-progress { width: 100%; height: 8px; background: var(--border); border-radius: 999px; overflow: hidden; margin-bottom: 22px; }
@@ -763,9 +821,9 @@ You'll need audio (speakers or headphones) to listen to the spoken safety messag
        ===================================================== -->
   <div id="screen-scenario" class="screen hidden">
     <div class="train-progress"><div class="train-progress-fill" id="trainProgressFill"></div></div>
-    <h2 class="question">Review and Rate the AI Safety Agent</h2>
-    <p class="question-sub">Look at the agent's image, listen to its safety message, then rate the statements below.</p>
-    <div class="situation-label" id="situationLabel">Safety Training Situation</div>
+    <h2 class="question">Review and Rate the Safety Agent</h2>
+    <p class="question-sub">Read the situation, look at the agent's image, listen to its safety message, then rate the statements below.</p>
+    <div class="situation-desc" id="situationDesc"></div>
 
     <div class="training-image" id="trainingImage">
       <span>[Agent image]</span>
@@ -779,9 +837,14 @@ You'll need audio (speakers or headphones) to listen to the spoken safety messag
     </div>
     <audio id="trainingAudio" preload="auto"></audio>
 
-    <h3 class="sub-heading" style="margin-top: 24px;">Based on this agent, please rate how much you agree with each statement.</h3>
-
-    <div id="trainingMatrix"></div>
+    <div id="evalSection" class="eval-section locked">
+      <h3 class="sub-heading" style="margin-top: 24px;">Based on this agent, please rate how much you agree with each statement.</h3>
+      <div class="eval-lock-notice">
+        <i class="ti ti-headphones" aria-hidden="true"></i>
+        <span>Please listen to the agent's message first. The rating below will unlock once you have heard most of it.</span>
+      </div>
+      <div id="trainingMatrix"></div>
+    </div>
 
     <div class="nav-controls">
       <button class="btn" id="scenario-back" onclick="goToPreviousTraining()">← Back</button>
@@ -1382,12 +1445,18 @@ function agentKey(p) {
 const SITUATIONS = {
   training: {
     label: 'Safety Training Briefing',
+    icon: 'ti-clipboard-text',
+    description: "It's the start of the shift, and your crew has gathered for a safety briefing before today's crane lifting work begins. The safety agent steps in to remind everyone how to stay safe around suspended loads and the lifting zone.",
     imageFolder: 'Image/Training',
     audioFolder: 'Audio/Training',
-    leadIn: 0          // 음성 시작 전 앞쪽 무음/배경음 길이(초) — 자막 동기화 보정용
+    autoTrim: true,    // 배경음 추가됨 — 말소리 구간(앞·뒤 배경음 제외)을 파일별로 자동 감지해 자막을 맞춤
+    leadIn: 1.0,       // (자동 감지 실패 시 폴백) 앞쪽 배경음 길이 추정값(초)
+    tailOut: 0.7       // (자동 감지 실패 시 폴백) 뒤쪽 배경음 길이 추정값(초)
   },
   warning: {
     label: 'Hazard Warning Message',
+    icon: 'ti-alert-triangle',
+    description: "While moving across the site, you have come close to an active lifting area where a heavy load is suspended from the crane overhead. The safety agent spots the hazard and calls out to warn you right away.",
     imageFolder: 'Image/Warning',
     audioFolder: 'Audio/Warning',
     autoTrim: true,    // 말소리 구간(앞·뒤 배경음 제외)을 파일별로 자동 감지해 자막을 맞춤
@@ -1410,7 +1479,7 @@ function scenarioImage(situation, p) {
   if (situation === 'training') {
     if (p.anthropomorphism === 'human')    return SITUATIONS.training.imageFolder + '/' + (p.gender === 'male' ? 'Training_Male.png' : 'Training_Female.png');
     if (p.anthropomorphism === 'humanoid') return SITUATIONS.training.imageFolder + '/Training_Humanoid.png';
-    return SITUATIONS.training.imageFolder + '/Training_SPOT.png';
+    return SITUATIONS.training.imageFolder + '/Training_UGV.png';
   }
 
   if (p.anthropomorphism === 'human')    return SITUATIONS.warning.imageFolder + '/' + (p.gender === 'male' ? 'Warning_Male.png' : 'Warning_Female.png');
@@ -1419,12 +1488,12 @@ function scenarioImage(situation, p) {
 }
 
 // 음성 — situation + gender + warmth 로 결정
-// Warning: Warning_High/Low_Male/Female.wav 조합으로 gender + warmth 조작
+// Warning: Warning_High/Low_Male/Female.mp3 조합으로 gender + warmth 조작
 function scenarioAudio(situation, p) {
   const g = p.gender === 'male' ? 'Male' : 'Female';
   if (situation === 'training') {
     const w = p.warmth === 'high' ? 'High-Warmth' : 'Low-Warmth';
-    return SITUATIONS.training.audioFolder + '/Training_' + g + '_' + w + '.wav';
+    return SITUATIONS.training.audioFolder + '/Training_' + g + '_' + w + '.mp3';
   }
 
   const w = p.warmth === 'high' ? 'High' : 'Low';
@@ -1553,12 +1622,12 @@ function detectSpeechSpan(src, callback) {
 
 // 평가 항목 7개 (7점 리커트). key=데이터 컬럼명, label=화면에 보이는 질문 문장.
 const EVAL_ITEMS = [
-  { key: 'compliance',     label: 'I would follow the safety instructions provided by this AI safety agent.' },
-  { key: 'preference',     label: 'I would like to work with this AI safety agent.' },
-  { key: 'persuasiveness', label: 'I would find this AI safety agent persuasive.' },
-  { key: 'trust',          label: 'I would trust this AI safety agent to help keep me safe on the construction site.' },
-  { key: 'comfort',        label: 'I would feel comfortable working with this AI safety agent.' },
-  { key: 'attention',      label: 'I would pay close attention to the information provided by this AI safety agent.' }
+  { key: 'compliance',     label: 'I would follow the safety instructions provided by this safety agent.' },
+  { key: 'preference',     label: 'I would like to work with this safety agent.' },
+  { key: 'persuasiveness', label: 'I would find this safety agent persuasive.' },
+  { key: 'trust',          label: 'I would trust this safety agent to help keep me safe on the construction site.' },
+  { key: 'comfort',        label: 'I would feel comfortable working with this safety agent.' },
+  { key: 'attention',      label: 'I would pay close attention to the information provided by this safety agent.' }
 ];
 
 // Scenario phase 상태
@@ -1567,7 +1636,11 @@ let situationPersonaOrders = { training: [], warning: [] };
 let scenarioSequence = [];     // [{ situation:'training', personaIndex:0 }, ...] 총 24개
 let currentScenarioIdx = 0;
 let scenarioResponses = {};    // { situation_personaKey: { compliance:n, preference:n, ... } }
+let audioUnlocked = {};        // { personaKey: true } — 음성을 80% 이상 들으면 해당 시나리오 평가 잠금 해제(유지)
 let currentAudio = null;      // playMessage 공용 핸들
+
+// 평가 잠금 해제에 필요한 음성 청취 비율 (0.8 = 80%)
+const LISTEN_THRESHOLD = 0.8;
 
 function shuffle(arr) {
   const a = arr.slice();
@@ -1609,13 +1682,29 @@ function showCurrentScenario() {
   // 진행 바 — 현재 단계 비율로 채움 (숫자 대신 직관적인 막대)
   const pct = ((currentScenarioIdx + 1) / scenarioSequence.length) * 100;
   document.getElementById('trainProgressFill').style.width = pct + '%';
-  document.getElementById('situationLabel').textContent = SITUATIONS[situation].label;
+  const sitInfo = SITUATIONS[situation];
+  const descEl = document.getElementById('situationDesc');
+
+  const titleEl = document.createElement('span');
+  titleEl.className = 'situation-desc-title';
+  const iconEl = document.createElement('i');
+  iconEl.className = 'ti ' + (sitInfo.icon || 'ti-info-circle');
+  iconEl.setAttribute('aria-hidden', 'true');
+  const titleText = document.createElement('span');
+  titleText.textContent = sitInfo.label;
+  titleEl.append(iconEl, titleText);
+
+  const bodyEl = document.createElement('p');
+  bodyEl.className = 'situation-desc-body';
+  bodyEl.textContent = sitInfo.description || '';
+
+  descEl.replaceChildren(titleEl, bodyEl);
 
   // 이미지
   const imgEl = document.getElementById('trainingImage');
   const imgSrc = scenarioImage(situation, persona);
   imgEl.innerHTML = imgSrc
-    ? '<img src="' + imgSrc + '" alt="AI safety agent">'
+    ? '<img src="' + imgSrc + '" alt="safety agent">'
     : '<span>[Agent image]</span>';
 
   // 음성 + 자막
@@ -1625,11 +1714,20 @@ function showCurrentScenario() {
   document.getElementById('trainingMatrix').innerHTML = buildEvalMatrixHTML(situation, persona);
   restoreScenarioResponses(situation, persona);
 
+  applyEvalLock();
   checkTrainingComplete();
   document.getElementById('scenario-next').textContent =
     (currentScenarioIdx === scenarioSequence.length - 1) ? 'Submit →' : 'Next →';
   updateProgressStrip();
   window.scrollTo(0, 0);
+}
+
+// 현재 시나리오의 평가 매트릭스 잠금/해제 — 음성 80% 청취 전까지 잠금 (DEV_MODE는 항상 해제)
+function applyEvalLock() {
+  const item = scenarioSequence[currentScenarioIdx];
+  const pk = scenarioKey(item.situation, AGENT_PERSONAS[item.personaIndex]);
+  const unlocked = DEV_MODE || !!audioUnlocked[pk];
+  document.getElementById('evalSection').classList.toggle('locked', !unlocked);
 }
 
 // 음성 플레이어 + 자막 동기화 설정 (상황/agent마다 src/자막 갱신)
@@ -1638,6 +1736,18 @@ function setupScenarioAudio(situation, persona) {
   const btn    = document.getElementById('trainingPlayBtn');
   const subBox = document.getElementById('subtitleBox');
   const lines  = scenarioSubtitles(situation, persona);
+  const pk     = scenarioKey(situation, persona);
+
+  // 음성을 LISTEN_THRESHOLD(80%) 이상 들으면 이 시나리오의 평가를 잠금 해제(한 번 해제되면 유지)
+  function checkListenProgress() {
+    if (audioUnlocked[pk]) return;
+    const dur = audio.duration;
+    if (isFinite(dur) && dur > 0 && audio.currentTime / dur >= LISTEN_THRESHOLD) {
+      audioUnlocked[pk] = true;
+      applyEvalLock();
+      checkTrainingComplete();
+    }
+  }
 
   const cfg = SITUATIONS[situation] || {};
   const leadIn   = cfg.leadIn  || 0;   // 앞쪽 무음/배경음 길이(초) — 자막을 그만큼 늦춰 시작
@@ -1681,6 +1791,7 @@ function setupScenarioAudio(situation, persona) {
 
   // 재생 위치에 맞는 자막 한 줄 표시
   audio.ontimeupdate = function() {
+    checkListenProgress();
     if (!lines.length) return;
     if (!cues.length) rebuildCues();
     const t = audio.currentTime;
@@ -1703,7 +1814,11 @@ function setupScenarioAudio(situation, persona) {
     }
   };
   audio.onpause = function() { btn.querySelector('i').className = 'ti ti-player-play'; };
-  audio.onended = function() { btn.querySelector('i').className = 'ti ti-player-play'; };
+  audio.onended = function() {
+    btn.querySelector('i').className = 'ti ti-player-play';
+    // 끝까지 들었으면 확실히 해제 (duration 계산 오차 대비)
+    if (!audioUnlocked[pk]) { audioUnlocked[pk] = true; applyEvalLock(); checkTrainingComplete(); }
+  };
 }
 
 function toggleTrainingAudio() {
@@ -1719,16 +1834,15 @@ function toggleTrainingAudio() {
 
 function buildEvalMatrixHTML(situation, persona) {
   const pk = scenarioKey(situation, persona);
-  // 외형이 '사람'인 조건에서는 평가 문장의 호칭을 'this AI safety agent' → 'this safety officer'로 치환.
-  // (humanoid / robotlike 조건은 'this AI safety agent' 유지)
-  const referent = persona.anthropomorphism === 'human' ? 'this safety officer' : 'this AI safety agent';
+  // 호칭은 모든 외형 조건(human / humanoid / robotlike)에서 'this safety agent'로 통일.
+  // (외형만 조작하고 호칭은 동일하게 두어 호칭에 의한 교란을 제거)
   const headers = ['Strongly<br>disagree', 'Disagree', 'Somewhat<br>disagree', 'Neither', 'Somewhat<br>agree', 'Agree', 'Strongly<br>agree'];
   let html = '<div class="message-card"><table class="matrix-table"><thead><tr><th class="matrix-question-header"></th>';
   for (const h of headers) html += '<th>' + h + '</th>';
   html += '</tr></thead><tbody>';
   for (const item of EVAL_ITEMS) {
     html += '<tr data-persona="' + pk + '" data-dim="' + item.key + '">';
-    html += '<td class="matrix-question">' + item.label.replace('this AI safety agent', referent) + '</td>';
+    html += '<td class="matrix-question">' + item.label + '</td>';
     for (let i = 1; i <= 7; i++) {
       html += '<td><div class="matrix-cell" data-value="' + i + '" onclick="selectEvalCell(this)"></div></td>';
     }
@@ -1742,6 +1856,8 @@ function selectEvalCell(el) {
   const row = el.closest('tr');
   const pk = row.dataset.persona;
   const dim = row.dataset.dim;
+  // 음성 80% 청취 전에는 선택 불가 (pointer-events 외 방어)
+  if (!DEV_MODE && !audioUnlocked[pk]) return;
   row.querySelectorAll('.matrix-cell').forEach(function(c) { c.classList.remove('selected'); });
   el.classList.add('selected');
   if (!scenarioResponses[pk]) scenarioResponses[pk] = {};
@@ -1767,7 +1883,8 @@ function checkTrainingComplete() {
   const pk = scenarioKey(item.situation, AGENT_PERSONAS[item.personaIndex]);
   const r = scenarioResponses[pk] || {};
   const allFilled = EVAL_ITEMS.every(function(item) { return r[item.key]; });
-  document.getElementById('scenario-next').disabled = !allFilled;
+  // 음성 80% 청취 + 모든 문항 응답 둘 다 충족해야 다음으로 진행 가능
+  document.getElementById('scenario-next').disabled = !(allFilled && audioUnlocked[pk]);
 }
 
 function goToNextTraining() {
